@@ -2094,6 +2094,21 @@
  <div class="markdown-body">
 <h1>Vue-router 路由守卫</h1>
 
+<p>Vue-router是Vue.js的官方路由管理插件，提供了一种机制，可以在跳转到不同路由前，执行一些逻辑。这个机制叫做路由守卫。</p>
+<p>路由守卫分为全局守卫和组件守卫两种。</p>
+<p>全局守卫可以在所有路由跳转前执行，可以用来做一些权限控制，如登录验证等。全局守卫分为以下三种：</p>
+<ul>
+<li>beforeEach(to, from, next)：在路由跳转前执行，可以执行异步操作，如登录验证等。to表示要跳转到的路由，from表示当前的路由，next是一个函数，用于执行跳转。</li>
+<li>afterEach(to, from)：在路由跳转后执行，不接收next函数，无法阻止路由跳转。</li>
+<li>beforeResolve(to, from, next)：在路由跳转前执行，但在路由组件被解析之后执行，这个钩子只在2.5.0+版本可用。</li>
+</ul>
+<p>组件守卫是在组件内部定义的，可以在组件跳转前和跳转后执行。组件守卫分为以下三种：</p>
+<ul>
+<li>beforeRouteEnter(to, from, next)：在路由组件被激活前执行，只能在路由组件内部定义，无法访问this，因为组件实例还未创建。</li>
+<li>beforeRouteUpdate(to, from, next)：在当前路由组件已经被激活，但是路由参数发生变化时执行，比如/user/:id路由，从/user/1跳转到/user/2，会触发这个守卫。</li>
+<li>beforeRouteLeave(to, from, next)：在路由组件即将被销毁前执行，可以用来做一些用户确认操作，如关闭提示等。</li>
+</ul>
+<p>路由守卫的执行顺序是全局beforeEach -&gt; 匹配路由组件内部beforeRouteEnter -&gt; 匹配路由组件内部beforeRouteUpdate -&gt; 全局beforeResolve -&gt; 全局afterEach -&gt; 匹配路由组件内部beforeRouteLeave。</p>
 
 
 </div>
