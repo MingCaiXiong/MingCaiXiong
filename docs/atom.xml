@@ -1,0 +1,1881 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[精通Java编程]]></title>
+  <link href="http://xiongmingcai.top/atom.xml" rel="self"/>
+  <link href="http://xiongmingcai.top/"/>
+  <updated>2023-03-09T12:04:40+08:00</updated>
+  <id>http://xiongmingcai.top/</id>
+  <author>
+    <name><![CDATA[]]></name>
+    
+  </author>
+  <generator uri="http://www.mweb.im">MWeb</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis 批量插入和批量删除]]></title>
+    <link href="http://xiongmingcai.top/16174294104179.html"/>
+    <updated>2021-04-03T13:56:50+08:00</updated>
+    <id>http://xiongmingcai.top/16174294104179.html</id>
+    <content type="html"><![CDATA[
+<p>利用集合保存批处理数据，再利用批处理sql（使用foreach进行遍历）一次性完成操作。</p>
+<ol>
+<li>无法获取插入数据的id，如果要通过id做后续处理就不合适了</li>
+<li>批量生成的sql太长，可能会被服务器拒绝（解决方案：可以采用分段形式，比如要导入100w条数据，可以通过for循环二次嵌套完成，一次导入1w条）</li>
+</ol>
+<h2><a id="%E6%89%B9%E9%87%8F%E6%96%B0%E5%A2%9E" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>批量新增</h2>
+<p>1，xml进行配置</p>
+<pre><code class="language-xml">&lt;!--    INSERT INTO table--&gt;
+&lt;!--    VALUES (&quot;a1&quot;,&quot;a2&quot;,&quot;a3&quot;),(&quot;b1&quot;,&quot;b2&quot;,&quot;b3&quot;),(...)--&gt;
+&lt;!--批量新增--&gt;
+&lt;!--因为批处理是一次性导入多条，所以这里使用list--&gt;
+&lt;!--foreach类似for循环 collection：迭代的数据源，固定写入list，表示从外界传入的list集合 ，item；循环中的迭代变量
+，item：索引，类似于数字，seperator：分割符号--&gt;
+&lt;insert id=&quot;batchInsert&quot; parameterType=&quot;java.util.List&quot;&gt;
+    insert into t_goods(title,sub_title,original_cost,current_price,discount,is_free_delivery,category_id)
+    values
+    &lt;foreach collection=&quot;list&quot; item=&quot;item&quot; index=&quot;index&quot; separator=&quot;,&quot;&gt;
+        (#{item.title},#{item.subTitle},#{item.originalCost},#{item.currentPrice},#{item.discount},#{item.isFreeDelivery},#{item.categoryId})
+    &lt;/foreach&gt;
+&lt;/insert&gt;
+</code></pre>
+<pre><code class="language-java">@Test
+public void testBatchInsert() {
+    SqlSession sqlSession = null;
+    try {
+        sqlSession = MyBatisUtils.openSession();
+        List&lt;Goods&gt; good = new ArrayList&lt;&gt;();
+        for (int i = 0; i &lt; 10000; i++) {
+            Goods goods = new Goods();
+            goods.setTitle(&quot;测试商品6&quot;);
+            goods.setSubTitle(&quot;测试商品666&quot;);
+            goods.setCategoryId(111);
+            goods.setOriginalCost(1000f);
+            goods.setIsFreeDelivery(1);
+            goods.setDiscount(2f);
+            goods.setCurrentPrice(300f);
+            good.add(goods);
+        }
+        sqlSession.insert(&quot;goods.batchInsert&quot;,good);
+        sqlSession.commit();
+    } catch (Exception e) {
+        if (sqlSession != null) {
+            sqlSession.rollback();
+        }
+        throw e;
+    } finally {
+        MyBatisUtils.closeSqlSession(sqlSession);
+    }
+}
+</code></pre>
+<h2><a id="%E6%89%B9%E9%87%8F%E5%88%A0%E9%99%A4" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>批量删除</h2>
+<p>在MySQL中使用ID从表中删除许多行</p>
+<p>最好的方法是使用IN语句：</p>
+<pre><code class="language-sql">DELETE from tablename WHERE id IN (1,2,3,...,254);
+</code></pre>
+<p>BETWEEN如果您有连续的ID，也可以使用：</p>
+<pre><code class="language-sql">DELETE from tablename WHERE id BETWEEN 1 AND 254;
+</code></pre>
+<p>您当然可以使用其他WHERE子句来限制某些ID：</p>
+<pre><code class="language-sql">DELETE from tablename WHERE id BETWEEN 1 AND 254 AND id&lt;&gt;10;
+</code></pre>
+<pre><code class="language-xml">&lt;!-- DELETE FROM table where goods_id in(a,b)--&gt;
+&lt;!--批量删除--&gt;
+&lt;!--这里只需要传入item即可，因为它只是goods编号--&gt;
+&lt;!--open和close指代删除语句in后面的左右括号--&gt;
+&lt;delete id=&quot;batchDelete&quot; parameterType=&quot;java.util.List&quot;&gt;
+    delete from t_goods where goods_id in
+    &lt;foreach collection=&quot;list&quot; item=&quot;item&quot; index=&quot;index&quot; open=&quot;(&quot; close=&quot;)&quot; separator=&quot;,&quot;&gt;
+        (#{item})
+    &lt;/foreach&gt;
+&lt;/delete&gt;
+</code></pre>
+<pre><code class="language-java">    @Test
+    public void testBatchDelete() {
+        List&lt;Integer&gt; good = new ArrayList&lt;&gt;();
+        good.add(32680);
+        good.add(32682);
+        good.add(32683);
+        good.add(32684);
+        try {
+            sqlSession.delete(&quot;goods.batchDelete&quot;,good);
+            sqlSession.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+            sqlSession.rollback();
+        }
+    }
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[RESTful开发风格]]></title>
+    <link href="http://xiongmingcai.top/16188287262563.html"/>
+    <updated>2021-04-19T18:38:46+08:00</updated>
+    <id>http://xiongmingcai.top/16188287262563.html</id>
+    <content type="html"><![CDATA[
+<p>传统Web应用的开发，需要显示软件支持HTML编码，会限制Spring MVC 框架在某些场景的应用（微信小程序、手机App/IE浏览器）<br />
+<img src="media/16188287262563/16188288070034.png" alt="" /></p>
+<h2><a id="rest%E4%B8%8Erestful" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>REST与RESTful</h2>
+<ul>
+<li>
+<p>REST(Representational State Transfer)-表现层状态转换，资源在网络中以某种表现形式进行状态转移，是一种理念。说白了，比如在Web环境下如果获取图片/CSS/JS/网页这些资源的时候就要以URL的形式来进行表现。</p>
+</li>
+<li>
+<p>RESTful是基于REST理念的一套开发风格，是具体的开发规则。</p>
+</li>
+<li>
+<p>RESTful最典型的特点--&gt;服务器端只返回（JSON/xml）格式的数据，同时要求返回的数据不包含任何与展现相关的内容</p>
+</li>
+<li>
+<p>行业中通常将基于RESTful 规则开发的程序称为“前后端分离”</p>
+</li>
+</ul>
+<p><img src="media/16188287262563/16188289825078.png" alt="" /></p>
+<h2><a id="restful%E5%BC%80%E5%8F%91%E8%A7%84%E8%8C%83%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>RESTful开发规范：</h2>
+<ul>
+<li>
+<p>使用URL作为用户交互入口。</p>
+</li>
+<li>
+<p>明确的语义规范（GET|POST|PUT|DELETE），根据请求的类型，明确请求的目的，如果是GET请求，那么根据RESTful开发风格这个请求在服务器端的某个Controller只能做查询操作，Post为增加，Put为修改，Delete为删除。put和delete不是web的。</p>
+</li>
+<li>
+<p>只返回数据（JSON|XML），不包含展现。</p>
+</li>
+</ul>
+<h2><a id="restful%E5%91%BD%E5%90%8D%E8%A6%81%E6%B1%82%E5%AF%B9-uri%E7%9A%84%E8%A7%84%E8%8C%83" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>RESTful命名要求(对URI的规范)</h2>
+<p><img src="media/16188287262563/16188290557635.png" alt="" /></p>
+<p><a href="https://github.com/MingCaiXiong/spring-learn/commit/1b510e2d59e8c62651ddcdf021e16095a3fd9c32">RESTful 增删改查 · MingCaiXiong/spring-learn@1b510e2</a></p>
+<h2><a id="restcontroller%E6%B3%A8%E8%A7%A3" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>RestController注解</h2>
+<p>@RestController注解--&gt;在“类”上使用，使用后类中的“方法”上可以不使用“@ResponseBody”注解 方法返回值 就是单纯的数据。而不是路径了</p>
+<h2><a id="%E8%B7%AF%E5%BE%84%E5%8F%98%E9%87%8F%E6%B3%A8%E8%A7%A3%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>路径变量注解：</h2>
+<p><img src="media/16188287262563/16188374591684.png" alt="" /></p>
+<h2><a id="%E7%AE%80%E5%8D%95%E8%AF%B7%E6%B1%82%E4%B8%8E%E9%9D%9E%E7%AE%80%E5%8D%95%E8%AF%B7%E6%B1%82%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>简单请求与非简单请求：</h2>
+<ul>
+<li>
+<p>简单请求是指标准结构的HTTP请求，对于GET/POST请求</p>
+</li>
+<li>
+<p>非简单请求是复杂要求的HTTP请求，指PUT/DELETE、扩展标准请求</p>
+</li>
+</ul>
+<h3><a id="%E9%9D%9E%E7%AE%80%E5%8D%95%E8%AF%B7%E6%B1%82%E5%8F%91%E9%80%81%E8%BF%87%E7%A8%8B%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>非简单请求发送过程：</h3>
+<p>首先，发送预检请求，</p>
+<p>如果服务器可以处理“预检请求&quot;并返回数据，则浏览器会将“实际请求”发送给服务器。</p>
+<p>如果服务器不能处理“预见请求&quot;，则浏览器不会再次发送“实际请求”这样就可以减轻服务器的压力</p>
+<h2><a id="%E5%9B%A0%E4%B8%BA%E5%8E%86%E5%8F%B2%E9%97%AE%E9%A2%98springmvc%E9%9C%80%E8%A6%81%E5%AF%B9%E9%9D%9E%E7%AE%80%E5%8D%95%E8%AF%B7%E6%B1%82%E5%81%9A%E8%BF%87%E6%BB%A4%E5%99%A8%E9%85%8D%E7%BD%AE%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>因为历史问题,springMVC需要对非简单请求做过滤器配置：</h2>
+<ul>
+<li>web.xml添加过滤器</li>
+</ul>
+<pre><code class="language-xml">&lt;filter&gt;
+    &lt;filter-name&gt;formContentFilter&lt;/filter-name&gt;
+    &lt;filter-class&gt;org.springframework.web.filter.FormContentFilter&lt;/filter-class&gt;
+&lt;/filter&gt;
+&lt;filter-mapping&gt;
+    &lt;filter-name&gt;formContentFilter&lt;/filter-name&gt;
+    &lt;url-pattern&gt;/*&lt;/url-pattern&gt;
+&lt;/filter-mapping&gt;
+</code></pre>
+<p><img src="media/16188287262563/16188378303199.png" alt="" /></p>
+<h2><a id="springmvc%E8%BF%9B%E8%A1%8Cjson%E5%BA%8F%E5%88%97%E5%8C%96%E6%94%AF%E6%8C%81%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>SpringMVC进行JSON序列化支持：</h2>
+<ul>
+<li>fastjackson--&gt;json 序列化工具&gt;&gt;&gt;这个工具的2.9版本之前有系统漏洞，所以使用时 一定要使用2.9以后的版本。</li>
+<li>在pom.xml中导入依赖</li>
+</ul>
+<pre><code class="language-xml">&lt;!-- json核心包--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+    &lt;artifactId&gt;jackson-core&lt;/artifactId&gt;
+    &lt;version&gt;2.9.9&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- json和目标对象交互--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+    &lt;artifactId&gt;jackson-databind&lt;/artifactId&gt;
+    &lt;version&gt;2.9.9&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;!-- json注解支持--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.fasterxml.jackson.core&lt;/groupId&gt;
+    &lt;artifactId&gt;jackson-annotations&lt;/artifactId&gt;
+    &lt;version&gt;2.9.9&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<h3><a id="springmvc%E8%BF%94%E5%9B%9Ejson" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>SpringMVC返回json</h3>
+<ul>
+<li>对象序列化与集合序列化，如果请求Controlle对应的方法返回是一个对象或者集合，且Controller类添加注解@RestController或者方法上有注解@ResponseBody，那么在引入依赖后，Spring MVC会自动将对象转换为Json字符串：</li>
+</ul>
+<p><img src="media/16188287262563/16188810630513.png" alt="" /></p>
+<ul>
+<li>Json对时间处理上不是很理想，对于Java程序中的时间，Json序列化的结果是从1970年到Java程序时间的毫秒数，所以要特殊处理，对于要序列化的日期变量要，timezone的数值是时区偏移，北京要偏移8个小时：</li>
+</ul>
+<pre><code class="language-java">  // 日期转换case
+  @JsonFormat(pattern = &quot;yyyy-MM-dd HH:mm:ss&quot;,timezone = &quot;GMT+8&quot;)
+  private Date date;
+</code></pre>
+<p><img src="media/16188287262563/16188810807617.png" alt="" /></p>
+<h2><a id="%E5%8F%B2%E4%B8%8A%E6%9C%80%E5%85%A8%E7%9A%84jackson%E6%A1%86%E6%9E%B6%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>史上最全的Jackson框架使用教程</h2>
+<p><a href="https://my.oschina.net/u/4606167/blog/4518138">史上最全的Jackson框架使用教程 - Java技术大联盟的个人空间 - OSCHINA - 中文开源技术交流社区</a></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBaits 使用Lambda方式连接MySQL]]></title>
+    <link href="http://xiongmingcai.top/16172477916883.html"/>
+    <updated>2021-04-01T11:29:51+08:00</updated>
+    <id>http://xiongmingcai.top/16172477916883.html</id>
+    <content type="html"><![CDATA[
+<pre><code class="language-java">public class MyBatisUtils {
+    // 利用static属于类不属于对象，且全局唯一
+    private static SqlSessionFactory sqlSessionFactory = null;
+
+    // 利用静态块在初始化类时实例化sqlSessionFactory
+    static {
+        Reader reader = null;
+        try {
+            reader = Resources.getResourceAsReader(&quot;mybatis-config.xml&quot;);
+            sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // 初始化错误时抛出异常ExceptionInInitializerError通知调用者
+            throw new ExceptionInInitializerError();
+        }
+    }
+
+    public static Object executeQuery(Function&lt;SqlSession, Object&gt; func) {
+
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        Object obj = null;
+        try {
+            obj = func.apply(sqlSession);
+        } finally {
+            sqlSession.close();
+        }
+        return obj;
+    }
+}
+
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Mybatis缓存：]]></title>
+    <link href="http://xiongmingcai.top/16172485392174.html"/>
+    <updated>2021-04-01T11:42:19+08:00</updated>
+    <id>http://xiongmingcai.top/16172485392174.html</id>
+    <content type="html"><![CDATA[
+<p>缓存优化指通过数据优化，提高程序执行效率的有效方式。比如我需要查询某个商品的数据，提取了一次之后，我需要再次进行提取。因为mysql是从硬盘读取数据，硬盘读取数据的速度较慢，同时第一次和第二次提取都返回了相同记录，多次提取也不合理。我们可以把第一次查询到的数据放到内存中，到第二次要提取的时候可直接从内存取值，内存取值速度比硬盘的快至少几十倍。</p>
+<pre><code class="language-java">    @Test
+    public  void testLv0Cache() {
+        Goods one = sqlSession.selectOne(&quot;goods.selectById&quot;, 745);
+        Goods tow = sqlSession.selectOne(&quot;goods.selectById&quot;, 745);
+        Goods three = sqlSession.selectOne(&quot;goods.selectById&quot;, 745);
+        //在同一会话中 无论获取多少次获取得数据都是同一对象
+        System.out.println(&quot;one = &quot; + one);
+        System.out.println(&quot;tow = &quot; + tow);
+        System.out.println(&quot;tow = &quot; + three);
+    }
+    @Test
+    public  void testLv1Cache() {
+        Goods one = sqlSession.selectOne(&quot;goods.selectById&quot;, 745);
+        sqlSession.commit();//commit()提交事务时，对该namespace中的缓存强制清空
+        Goods tow = sqlSession.selectOne(&quot;goods.selectById&quot;, 745);
+
+        System.out.println(&quot;one = &quot; + one);
+        System.out.println(&quot;tow = &quot; + tow);
+    }
+    @Test
+    public  void testLv2Cache() {
+        Goods one = sqlSession.selectOne(&quot;goods.selectById&quot;, 745);
+        MyBatisUtils.closeSession(sqlSession);// 一级缓存是sqlSession级别不同sqlSession对象
+        SqlSession sqlSession = MyBatisUtils.openSession();
+        Goods tow = sqlSession.selectOne(&quot;goods.selectById&quot;, 745);
+
+        System.out.println(&quot;one = &quot; + one);
+        System.out.println(&quot;tow = &quot; + tow);
+    }
+</code></pre>
+<h2><a id="mybatis%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>Mybatis缓存机制：</h2>
+<ul>
+<li>
+<p>1，一级缓存默认开启，缓存范围是一个sqlsession会话，范围较小</p>
+</li>
+<li>
+<p>2，二级缓存手动开启，范围属于Mapper Namespace，范围更大</p>
+</li>
+</ul>
+<p><img src="media/16172485392174/16173286295103.jpg" alt="myBatis" /></p>
+<h2><a id="%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E8%BF%90%E8%A1%8C%E8%A7%84%E5%88%99" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>二级缓存运行规则</h2>
+<ul>
+<li>
+<p>1，二级开启后默认所有查询操作均使用缓存</p>
+</li>
+<li>
+<p>2，写操作commit提交时会对该namespace缓存强制清空，为了保证数据的一致性。比如第一个用户得到一个商品叫婴幼儿奶粉，第二个用户把名称给改了，如果此时不清空缓存，第一个用户得到的仍然是婴幼儿奶粉，这样得到的数据和数据库底层得到的就不一致了。</p>
+</li>
+<li>
+<p>3，配置<code>useCache=false</code> 表示可以不用缓存</p>
+</li>
+<li>
+<p>4，配置<code>flushCache=true</code>代表强制清空缓存</p>
+</li>
+</ul>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Mapper 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;goods&quot;&gt;
+    &lt;!--二级缓存配置--&gt;
+    &lt;cache eviction=&quot;LRU&quot; flushInterval=&quot;60000&quot; size=&quot;512&quot; readOnly=&quot;true&quot;/&gt;
+&lt;/mapper&gt;
+</code></pre>
+<h3><a id="%E4%B8%80%EF%BC%8Ccache%E7%BC%93%E5%AD%98%E8%AE%BE%E7%BD%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>一，<code>cache</code>缓存设置</h3>
+<p>1，eviction：缓存的清除策略，当缓存对象达到上限后，会自动触发对应算法对缓存对象进行清除。</p>
+<p>清除策略主要有4种：</p>
+<ul>
+<li>
+<p>LRU：最近最久未使用，移除最长时间不适用的对象（mybatis默认使用这个，可以使我们访问的命中率达到最高）</p>
+</li>
+<li>
+<p>LFU：最近最少使用：移除最近访问率最低的对象（用得少）</p>
+</li>
+<li>
+<p>FIFO：先进先出：按对象进入缓存的顺序来移除它们，移除最先进入的对象（用得少，了解即可）</p>
+</li>
+<li>
+<p>SOFT：软引用：移除基于垃圾收集器状态和软引用规则的对象（基于JVM的垃圾回收器，用得少，了解即可）</p>
+</li>
+<li>
+<p>WEAK：弱引用：更积极的移除基于垃圾收集器状态和弱引用规则的对象（基于JVM的垃圾回收器，用得少，了解即可）</p>
+</li>
+</ul>
+<p>2，flushInterval：缓存的清除间隔，单位为毫秒，可以适当的设置长一些，利用这个选项可有效对内存进行及时回收</p>
+<p>例： flushInterval=&quot;60000&quot;：每隔10分钟自动对缓存进行清除</p>
+<p>3，size：缓存长度，表示当前最多能缓存多少个对象。</p>
+<ul>
+<li>
+<p>无论是缓存某个实体类，还是一个list集合，都只会被看成返回一个对象，实际开发中不推荐把list作为缓存对象在二级缓存中进行保存，因为list返回数据是多变的，导致命中率较低（比如selectALL这个），推荐selectById这种返回单个对象的进行使用，命中率高</p>
+</li>
+<li>
+<p>size的长度设置不要太小，在内存足够的情况下，比如有1400个商品，设置的size就要设置成1400，这样所有商品对象就可以在这个二级缓存中进行保存，这样按照id进行查询时候直接可以从内存进行提取，效率就非常高。<br />
+4，readOnly：是否设置成只读</p>
+</li>
+<li>
+<p>设置为true，代表返回只读缓存，每次从缓存取出的是缓存对象本身，这种执行效率较高</p>
+</li>
+<li>
+<p>设置为false，代表每次取出的是缓存对象的副本，每次取出的对象都是不同的，这种安全性较高</p>
+</li>
+</ul>
+<h3><a id="%E4%BA%8C%EF%BC%8C%E5%85%B6%E4%BB%96%E6%A0%87%E7%AD%BE%E7%9A%84%E7%BC%93%E5%AD%98%E8%AE%BE%E7%BD%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>二，其他标签的缓存设置</h3>
+<p>1，useCache：是否使用缓存，可以设置true或者false，不推荐selectALL这种查询全局的配置进行使用，因为数据量太大了，会对内存造成很大压力，而且因为list返回数据是多变的，导致命中率较低，设置成false即可。</p>
+<p>2，flushCache：在sql执行后是否强制清空缓存</p>
+<p>-可以设置成true或者false，设置成true的话，效果和commit是完全相同的</p>
+<ul>
+<li>
+<p>可用于写入和查询操作。</p>
+</li>
+<li>
+<p>设置了这个以后，同样不会被放入缓存</p>
+</li>
+</ul>
+<pre><code class="language-xml">&lt;insert id=&quot;insert&quot; parameterType=&quot;com.imooc.mybatis.entity.Goods&quot; useGeneratedKeys=&quot;true&quot; flushCache=&quot;true&quot;&gt;
+</code></pre>
+<p>这里表示插入数据成功后立刻清除缓存</p>
+<h2><a id="%E7%BC%93%E5%AD%98%E7%9A%84%E5%91%BD%E4%B8%AD%E7%8E%87%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>缓存的命中率：</h2>
+<p>比如执行了2次，第一次是从数据库查询，没有使用缓存，第二次是从缓存提取，这个时候命中率就是0.5,如果查询3次，命中率就是0.66。命中率越高代表缓存使用率越高，对程序优化效果更好。<br />
+<img src="media/16172485392174/mybatis.png" alt="mybatis" /></p>
+<p>其中 eviction mybatis默认使用LRU 这样保证我们访问的命中率尽可能的高</p>
+<p>缓存最好保存单个的实体对象缓存，不要保存大量的List查询结果（这样缓存命中率比较低）</p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Mybatis注解开发]]></title>
+    <link href="http://xiongmingcai.top/16172656311841.html"/>
+    <updated>2021-04-01T16:27:11+08:00</updated>
+    <id>http://xiongmingcai.top/16172656311841.html</id>
+    <content type="html"><![CDATA[
+<p>注解：把原来放在xml中的配置信息和sql语句放在程序中书写，实现功能都是一样的</p>
+<p>优点：有更好的开发体验，让程序开发的更快</p>
+<p><img src="media/16172656311841/16175039288095.jpg" alt="" /></p>
+<h2><a id="%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>数据查询</h2>
+<h3><a id="1%E5%88%9B%E5%BB%BA%E6%B3%A8%E8%A7%A3%E6%8E%A5%E5%8F%A3" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>1 创建注解接口</h3>
+<pre><code class="language-java">public interface StudentDao {
+    @Select(&quot;select * from student where age between #{min} and  #{max} limit #{limt};&quot;)
+    public List&lt;Student&gt; selectByAgeRange(@Param(&quot;min&quot;) int min, @Param(&quot;max&quot;) int max, @Param(&quot;limt&quot;) int limt);
+}
+</code></pre>
+<h3><a id="2%E5%9C%A8-mybatis-config-xml%E6%96%87%E4%BB%B6%E6%96%B0%E5%A2%9E%E5%AF%B9%E5%BA%94%E8%AF%B4%E6%98%8E" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>2 在mybatis-config.xml文件新增对应说明</h3>
+<pre><code class="language-xml">    &lt;!--两种配置方式，二选一即可。--&gt;
+    &lt;!--推荐使用第二种，因为随着工程越来越大，配置信息也越来越多，不便维护。
+    如果使用包的话，就只用写这一行，mybatis加载时候会对整个包进行扫描，极大简化了配置--&gt;
+&lt;mappers&gt;
+        &lt;!-- &lt;mapper class=&quot;top.xiongmingcai.dao.StudentDao&quot;/&gt;--&gt;
+        &lt;package name=&quot;top.xiongmingcai.dao&quot;/&gt;
+&lt;/mappers&gt;
+</code></pre>
+<h3><a id="3%EF%BC%8C%E6%B5%8B%E8%AF%95" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>3，测试</h3>
+<pre><code class="language-java">   @Test
+    public void name() {
+        // goodsDAO虽然是接口，但是运行的时候session会根据其配置信息动态生成其实现类
+        StudentDao StudentDao = sqlSession.getMapper(StudentDao.class);
+        List&lt;Student&gt; list = StudentDao.selectByAgeRange(25, 30, 10);
+        list.forEach(System.out::println);
+    }
+</code></pre>
+<p><img src="media/16172656311841/16175044230037.jpg" alt="" style="width:1106px;" /></p>
+<h3><a id="%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>测试数据</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left">id</th>
+<th style="text-align: left">reg_no</th>
+<th style="text-align: left">name</th>
+<th style="text-align: left">sex</th>
+<th style="text-align: left">age</th>
+<th style="text-align: left">grade</th>
+<th style="text-align: left">major</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left">1</td>
+<td style="text-align: left">20171201</td>
+<td style="text-align: left">梅长苏</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">21</td>
+<td style="text-align: left">2008</td>
+<td style="text-align: left">哲学系</td>
+</tr>
+<tr>
+<td style="text-align: left">2</td>
+<td style="text-align: left">20171202</td>
+<td style="text-align: left">萧景琰</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">30</td>
+<td style="text-align: left">2008</td>
+<td style="text-align: left">政治系</td>
+</tr>
+<tr>
+<td style="text-align: left">3</td>
+<td style="text-align: left">20171203</td>
+<td style="text-align: left">飞流</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">18</td>
+<td style="text-align: left">2016</td>
+<td style="text-align: left">人体系</td>
+</tr>
+<tr>
+<td style="text-align: left">4</td>
+<td style="text-align: left">20171204</td>
+<td style="text-align: left">萧景桓</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">35</td>
+<td style="text-align: left">2006</td>
+<td style="text-align: left">政治系</td>
+</tr>
+<tr>
+<td style="text-align: left">5</td>
+<td style="text-align: left">20171205</td>
+<td style="text-align: left">宫羽</td>
+<td style="text-align: left">女</td>
+<td style="text-align: left">25</td>
+<td style="text-align: left">2013</td>
+<td style="text-align: left">声学系</td>
+</tr>
+<tr>
+<td style="text-align: left">6</td>
+<td style="text-align: left">20171206</td>
+<td style="text-align: left">霓凰</td>
+<td style="text-align: left">女</td>
+<td style="text-align: left">31</td>
+<td style="text-align: left">2008</td>
+<td style="text-align: left">国际关系专业</td>
+</tr>
+<tr>
+<td style="text-align: left">7</td>
+<td style="text-align: left">20171207</td>
+<td style="text-align: left">秦般弱</td>
+<td style="text-align: left">女</td>
+<td style="text-align: left">30</td>
+<td style="text-align: left">2009</td>
+<td style="text-align: left">通讯专业</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-sql">create table student
+(
+    id     int auto_increment primary key,
+    reg_no int         not null,
+    name   varchar(20) not null,
+    sex    varchar(20) not null,
+    age    int         not null,
+    grade  varchar(50) not null,
+    major  varchar(50) not null
+);
+
+
+insert into babytun.student (id, reg_no, name, sex, age, grade, major)
+values  (1, 20171201, '梅长苏', '男', 21, '2008', '哲学系'),
+        (2, 20171202, '萧景琰', '男', 30, '2008', '政治系'),
+        (3, 20171203, '飞流', '男', 18, '2016', '人体系'),
+        (4, 20171204, '萧景桓', '男', 35, '2006', '政治系'),
+        (5, 20171205, '宫羽', '女', 25, '2013', '声学系'),
+        (6, 20171206, '霓凰', '女', 31, '2008', '国际关系专业'),
+        (7, 20171207, '秦般弱', '女', 30, '2009', '通讯专业');
+</code></pre>
+<h2><a id="%E7%BB%93%E6%9E%9C%E6%98%A0%E5%B0%84%E6%9F%A5%E8%AF%A2" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>结果映射查询</h2>
+<h2><a id="%E6%95%B0%E6%8D%AE%E6%8F%92%E5%85%A5" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>数据插入</h2>
+<h3><a id="1%E5%88%9B%E5%BB%BA%E6%B3%A8%E8%A7%A3%E6%8E%A5%E5%8F%A3" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>1.  创建注解接口</h3>
+<pre><code class="language-java">public interface StudentDao {
+    ......
+    @Insert(&quot;INSERT INTO student ( reg_no, name, sex, age, grade, major) VALUES (#{reg_no}, #{name}, #{sex}, #{age}, #{grade},#{major})&quot;)
+    @SelectKey(statement = &quot;select LAST_INSERT_ID()&quot;, before = false, keyProperty = &quot;id&quot;,  resultType = Integer.class)
+    public int insert(Student student);
+}
+
+</code></pre>
+<ul>
+<li>获取主键 <code> before=false</code>--表示在SQL语句之后执行（true，在SQL语句之前执行)</li>
+<li><code>keyProperty</code>表示主键属性</li>
+<li><code>resultType</code> 表示返回主键类型</li>
+</ul>
+<h3><a id="2%E5%9C%A8-mybatis-config-xml%E6%96%87%E4%BB%B6%E6%96%B0%E5%A2%9E%E5%AF%B9%E5%BA%94%E8%AF%B4%E6%98%8E" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>2 在mybatis-config.xml文件新增对应说明</h3>
+<pre><code class="language-xml">    &lt;!--两种配置方式，二选一即可。--&gt;
+    &lt;!--推荐使用第二种，因为随着工程越来越大，配置信息也越来越多，不便维护。
+    如果使用包的话，就只用写这一行，mybatis加载时候会对整个包进行扫描，极大简化了配置--&gt;
+&lt;mappers&gt;
+        &lt;!-- &lt;mapper class=&quot;top.xiongmingcai.dao.StudentDao&quot;/&gt;--&gt;
+        &lt;package name=&quot;top.xiongmingcai.dao&quot;/&gt;
+&lt;/mappers&gt;
+</code></pre>
+<h3><a id="3%E6%B5%8B%E8%AF%95" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>3. 测试</h3>
+<pre><code class="language-java">public class MyBatisUtilsTest {
+    static SqlSession sqlSession = null;
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        sqlSession = MyBatisUtils.openSession();
+    }
+
+    @Test
+    public void insert2() {
+        Student student = new Student();
+
+        student.setReg_no(20171202);
+        student.setName(&quot;萧炎&quot;);
+        student.setSex(&quot;男&quot;);
+        student.setAge(23);
+        student.setGrade(&quot;2008&quot;);
+        student.setMajor(&quot;练药系&quot;);
+
+
+        // goodsDAO虽然是接口，但是运行的时候session会根据其配置信息动态生成其实现类
+        StudentDao StudentDao = MyBatisUtilsTest.sqlSession.getMapper(StudentDao.class);
+        int last_insert_id = StudentDao.insert(student);
+        try {
+            sqlSession.commit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    @AfterClass
+    public static void afterClass() throws Exception {
+        MyBatisUtils.closeSession(sqlSession);
+    }
+}    
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis多表级联查询]]></title>
+    <link href="http://xiongmingcai.top/16174290208241.html"/>
+    <updated>2021-04-03T13:50:20+08:00</updated>
+    <id>http://xiongmingcai.top/16174290208241.html</id>
+    <content type="html"><![CDATA[
+<p>关系：</p>
+<ul>
+<li>1，班级和学生：班级1--n学生 （一对多关系）</li>
+</ul>
+<p>1个班级--》n(多)个学生，，1个学生--》(同一时间)1个班级</p>
+<p>这样，多对一的学生表需要持有班级的 外键</p>
+<ol>
+<li>2，学生和学籍档案（一对一关系）</li>
+</ol>
+<p>1个学生--》1份档案，，1份档案--》1个学生</p>
+<p>这样，1对1的关系通常通过主键进行关联（1号学生-对应-》1号档案）</p>
+<ul>
+<li>3，学生和课程的关系（多对多关系）</li>
+</ul>
+<p>1个学生--》n课程，，1个课程--》你个学生</p>
+<p>这样多对多的关系--》设计数据表时需要出现出一个 中间表 ，中间表持有课程和学生的编号，学生表与中间表关联，课程表与中间表关联，这样三张表就构建起一个多对多关系。<br />
+<img src="media/16172485392174/16173606959673.jpg" alt="" /></p>
+<h4><a id="%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E6%A1%88%E4%BE%8B%EF%BC%9A%EF%BC%88%E4%B8%80%E5%AF%B9%E5%A4%9A%EF%BC%89" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用场景案例：（一对多）</h4>
+<p>使用场景案例：（一对多）</p>
+<p>1、一个商品基本信息表：t_goods，主键是good_id</p>
+<p>2、一个商品图片表：t_goods_detail，外键是good_id</p>
+<p>3、一个商品有多个商品图片</p>
+<p>4、我们希望在查询这个商品的信息的同时，把该商品的商品图片也查询出来，</p>
+<p>5、商品与商品图片是一对多的关系，商品可以有多个商品图片，而一个商品图片只能有一个对应的商品。</p>
+<h5><a id="%E6%AD%A5%E9%AA%A4%EF%BC%9A1%E3%80%81%E5%88%9B%E5%BB%BA%E5%95%86%E5%93%81%E5%AE%9E%E4%BD%93%E7%B1%BBgoods%E3%80%81%E5%88%9B%E5%BB%BA%E5%95%86%E5%93%81%E5%9B%BE%E7%89%87%E8%A1%A8%E5%AE%9E%E4%BD%93%E7%B1%BBgoodsdetail" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>步骤：1、创建商品实体类Goods、创建商品图片表实体类GoodsDetail</h5>
+<pre><code class="language-java">public class Goods {
+    .....
+    private List&lt;GoodsDetail&gt; goodsDetails;
+    .....
+}    
+</code></pre>
+<h5><a id="%E6%AD%A5%E9%AA%A4%EF%BC%9A2%E3%80%81%E5%88%9B%E5%BB%BAgoods-mappers%E6%96%87%E4%BB%B6goods-xml%E3%80%81%E5%88%9B%E5%BB%BAgoodsdetail-mappers%E6%96%87%E4%BB%B6goods-detail-xml" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>步骤：2、创建Goods mappers文件goods.xml、创建GoodsDetail mappers文件goods_detail.xml</h5>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Config 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;goods&quot;&gt;
+     &lt;!--resultMap结果映射，说明GoodsDetail List集合数据从哪来的--&gt;
+    &lt;resultMap id=&quot;rmGoods2&quot; type=&quot;top.xiongmingcai.entity.Goods&quot;&gt;
+        &lt;!--设置主键字段：属性名、字段名--&gt;
+        &lt;id property=&quot;goods_id&quot; column=&quot;goods_id&quot;&gt;&lt;/id&gt;
+        &lt;!--设置collection：集合属性名、生成集合的SQL、关联主键--&gt;
+        &lt;collection property=&quot;goodsDetails&quot; select=&quot;goodsDetail.selectByGoodsId&quot; column=&quot;goods_id&quot;/&gt;
+    &lt;/resultMap&gt;    &lt;!--关联查询，resultMap结果映射到rmGoods--&gt;
+    &lt;select id=&quot;selectOneToMany&quot; resultMap=&quot;rmGoods2&quot;&gt;
+        select * from t_goods limit 0,3
+    &lt;/select&gt;
+&lt;/mapper&gt;
+</code></pre>
+<pre><code class="language-xml" data-meta="goods_detail.xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Mapper 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;goodsDetail&quot;&gt;
+
+    &lt;select id=&quot;selectByGoodsId&quot; parameterType=&quot;Integer&quot; resultType=&quot;top.xiongmingcai.entity.GoodsDetail&quot;&gt;
+        select *
+        from t_goods_detail
+        where goods_id = #{value}
+    &lt;/select&gt;
+&lt;/mapper&gt;
+</code></pre>
+<h5><a id="3%E3%80%81%E5%9C%A8sqlsession%E6%89%A7%E8%A1%8Cselect%E8%AF%AD%E5%8F%A5%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>3、在SqlSession执行select语句：</h5>
+<pre><code class="language-java">public class MyBatisUtilsTest {
+    static SqlSession sqlSession = null;
+
+    @AfterClass
+    public static void afterClass() throws Exception {
+        MyBatisUtils.closeSession(sqlSession);
+    }
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        sqlSession = MyBatisUtils.openSession();
+    }
+    @Test
+    public void selectOneToMany() {
+        List&lt;Goods&gt; list = sqlSession.selectList(&quot;goods.selectOneToMany&quot;);
+        for (Goods goods:list){
+            System.out.println(goods.getTitle()+&quot;:&quot;+goods.getGoodsDetails().size());
+        }
+    }
+}    
+</code></pre>
+<p>output</p>
+<pre><code class="language-sql">914  [main] DEBUG goods.selectOneToMany - ==&gt;  Preparing: select * from t_goods limit 0,3  
+971  [main] DEBUG goods.selectOneToMany - ==&gt; Parameters:  
+1028 [main] DEBUG goodsDetail.selectByGoodsId - ====&gt;  Preparing: select * from t_goods_detail where goods_id = ?  
+1033 [main] DEBUG goodsDetail.selectByGoodsId - ====&gt; Parameters: 741(Integer) 
+1056 [main] DEBUG goodsDetail.selectByGoodsId - &lt;====      Total: 6 
+1060 [main] DEBUG goodsDetail.selectByGoodsId - ====&gt;  Preparing: select * from t_goods_detail where goods_id = ?  
+1061 [main] DEBUG goodsDetail.selectByGoodsId - ====&gt; Parameters: 742(Integer) 
+1074 [main] DEBUG goodsDetail.selectByGoodsId - &lt;====      Total: 22 
+1075 [main] DEBUG goodsDetail.selectByGoodsId - ====&gt;  Preparing: select * from t_goods_detail where goods_id = ?  
+1075 [main] DEBUG goodsDetail.selectByGoodsId - ====&gt; Parameters: 743(Integer) 
+1086 [main] DEBUG goodsDetail.selectByGoodsId - &lt;====      Total: 14 
+1086 [main] DEBUG goods.selectOneToMany - &lt;==      Total: 3 
+斯利安 孕妈专用 洗发水 氨基酸表面活性剂 舒缓头皮 滋养发根 让你的秀发会喝水 品质孕妈:6
+亲恩 孕妇护肤品 燕窝补水保湿6件套 孕期安全温和 补水保湿套装:22
+优美孕 补水保湿 黄金果水润嫩肤三件套(中样装 洁面乳50g 水50ml 乳液50ml):14
+</code></pre>
+<h4><a id="%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF%E6%A1%88%E4%BE%8B%EF%BC%9A%EF%BC%88%E5%A4%9A%E5%AF%B9%E4%B8%80%EF%BC%89" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用场景案例：（多对一）</h4>
+<pre><code class="language-java">public class Goods {
+    .....
+        private Goods goods;//对多持有实体类
+    .....
+}    
+</code></pre>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Mapper 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;goodsDetail&quot;&gt;
+&lt;resultMap id=&quot;rmGoodsDetail&quot; type=&quot;top.xiongmingcai.entity.GoodsDetail&quot;&gt;
+        &lt;id property=&quot;gpId&quot; column=&quot;gd_id&quot;/&gt;
+        &lt;result property=&quot;goods_id&quot; column=&quot;goods_id&quot;/&gt;
+        &lt;!--        因为原有的goodsId会作为参数传给联动的SQL，所以这里需要手动为GoodsDetail 的goodsId属性赋值。--&gt;
+        &lt;association property=&quot;goods&quot; column=&quot;goods_id&quot; select=&quot;goods.selectById&quot;/&gt;
+    &lt;/resultMap&gt;
+    &lt;select id=&quot;selectMangToOne&quot; resultMap=&quot;rmGoodsDetail&quot; parameterType=&quot;Integer&quot;&gt;
+        select *
+        from t_goods_detail
+        where gd_id = #{value } limit 0,1
+    &lt;/select&gt;
+&lt;/mapper&gt;
+</code></pre>
+<pre><code class="language-java">    @Test
+    public void selectMangToOne() {
+        GoodsDetail goodsDetail = sqlSession.selectOne(&quot;goodsDetail.selectMangToOne&quot;,9259);
+        System.out.println(&quot;goodsDetail = &quot; + goodsDetail);
+    }
+</code></pre>
+<p><img src="media/16172485392174/16173627542111.jpg" alt="" style="width:1136px;" /></p>
+<h4><a id="%E4%BD%9C%E4%B8%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>作业</h4>
+<p>参照MyBatis对象关联查询案例，完成如下功能：</p>
+<p>1、创建班级表classes，表结构如下：<br />
+<img src="media/16172485392174/16173633682772.jpg" alt="" style="width:734px;" /></p>
+<p>2、为班级表添加内容</p>
+<pre><code class="language-sql">create table classes
+(
+    id      int auto_increment
+        primary key,
+    classno varchar(20) not null,
+    name    varchar(20) null,
+    major   varchar(20) null
+);
+
+insert into babytun.classes (id, classno, name, major)
+values  (1, 'Class001', '一班', '计算机'),
+        (2, 'Class002', '二班', '计算机'),
+        (3, 'Class003', '三班', '会计'),
+        (4, 'Class004', '四班', '会计');
+</code></pre>
+<p>3、创建学生表student，表结构如下：<br />
+<img src="media/16172485392174/16173634020031.jpg" alt="" style="width:734px;" /></p>
+<p>4、为学生表添加如下内容</p>
+<pre><code class="language-sql">create table student2
+(
+    id      int auto_increment
+        primary key,
+    stuno   varchar(20) not null,
+    stuname varchar(20) null,
+    sex     varchar(10) not null,
+    classno varchar(20) not null
+);
+
+insert into babytun.student2 (id, stuno, stuname, sex, classno)
+values  (1, '20181101', '梅长苏', '男', 'Class001'),
+        (2, '20181102', '萧景琰', '男', 'Class001'),
+        (3, '20181103', '宫羽', '女', 'Class001'),
+        (4, '20181201', '霓凰', '女', 'Class003');
+</code></pre>
+<p>5、定义实体类和Mapper xml文件，在测试类中查询一班的学生信息并显示（使用一对多关联查询完成）</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Config 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;classes&quot;&gt;
+
+    &lt;select id=&quot;selectByClassOne&quot;  resultType=&quot;top.xiongmingcai.entity.Classes&quot; parameterType=&quot;String&quot;&gt;
+        select * from classes where trim(classno) =   #{value }
+    &lt;/select&gt;
+    &lt;!--resultMap结果映射，说明GoodsDetail List集合数据从哪来的--&gt;
+    &lt;resultMap id=&quot;rmClasses&quot; type=&quot;top.xiongmingcai.entity.Classes&quot;&gt;
+        &lt;!--设置主键字段：属性名、字段名--&gt;
+        &lt;id property=&quot;id&quot; column=&quot;id&quot;/&gt;
+        &lt;!--设置collection：集合属性名、生成集合的SQL、关联主键--&gt;
+        &lt;collection property=&quot;student2List&quot; select=&quot;student2.selectByClassOne&quot; column=&quot;classno&quot;/&gt;
+    &lt;/resultMap&gt;
+
+    &lt;!--关联查询，resultMap结果映射到rmGoods--&gt;
+    &lt;select id=&quot;selectByClassOneMany&quot; resultMap=&quot;rmClasses&quot;&gt;
+        select * from classes limit 0,4
+    &lt;/select&gt;
+&lt;/mapper&gt;
+</code></pre>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Config 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;student2&quot;&gt;
+    &lt;resultMap id=&quot;rmGoodsDetail&quot; type=&quot;top.xiongmingcai.entity.Student2&quot;&gt;
+        &lt;id property=&quot;classno&quot; column=&quot;classno&quot;/&gt;
+        &lt;result property=&quot;classno&quot; column=&quot;classno&quot;/&gt;
+        &lt;!--        因为原有的goodsId会作为参数传给联动的SQL，所以这里需要手动为GoodsDetail 的goodsId属性赋值。--&gt;
+        &lt;association property=&quot;classes&quot; column=&quot;classno&quot; select=&quot;classes.selectByClassOne&quot;/&gt;
+    &lt;/resultMap&gt;
+    &lt;select id=&quot;selectByClassOne&quot;  resultMap=&quot;rmGoodsDetail&quot;  parameterType=&quot;String&quot;&gt;
+        select * from student2 where classno  =   #{value }
+    &lt;/select&gt;
+&lt;/mapper&gt;
+</code></pre>
+<p>6、继续完善实体类和Mapper xml文件，在测试类中查询，根据学生查询到班级信息并显示（使用多对一关联查询完成）</p>
+<pre><code class="language-java">   @Test
+    public void selectByClassOneMany() {
+        List&lt;Classes&gt; classesList = sqlSession.selectList(&quot;classes.selectByClassOneMany&quot;);
+        classesList.forEach(System.out::println);
+    }
+</code></pre>
+<p><img src="media/16172485392174/16174423065071.jpg" alt="" style="width:1066px;" /></p>
+<pre><code class="language-java">  @Test
+    public void selectByClassOneMany() {
+        List&lt;Classes&gt; classesList = sqlSession.selectList(&quot;classes.selectByClassOneMany&quot;);
+        classesList.forEach(System.out::println);
+    }
+
+</code></pre>
+<p><img src="media/16172485392174/16174425928480.jpg" alt="" style="width:1106px;" /></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[App 在macOS Catalina下提示已损坏无法打开解决办法：]]></title>
+    <link href="http://xiongmingcai.top/16174290544478.html"/>
+    <updated>2021-04-03T13:50:54+08:00</updated>
+    <id>http://xiongmingcai.top/16174290544478.html</id>
+    <content type="html"><![CDATA[
+<ol>
+<li>打开终端；</li>
+<li>输入以下命令，回车；<br />
+<code>sudo xattr -d com.apple.quarantine /Applications/xxxx.app</code><br />
+注意：/Applications/xxxx.app 换成你的App路径</li>
+<li>重启App即可。</li>
+</ol>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[不同数据库分页的实现原理：（面试经常问到）.]]></title>
+    <link href="http://xiongmingcai.top/16174293503251.html"/>
+    <updated>2021-04-03T13:55:50+08:00</updated>
+    <id>http://xiongmingcai.top/16174293503251.html</id>
+    <content type="html"><![CDATA[
+<h2><a id="mysql%E5%88%86%E9%A1%B5%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MySQL分页：</h2>
+<p>limit 10,20 --10代表 起始行号，20表示从起始行之后（起始行不算在内）向后取多少条数据。</p>
+<p><img src="media/16172485392174/16174287951354.jpg" alt="" /></p>
+<h2><a id="oracal%E4%B8%AD%E7%9A%84" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>Oracal中的</h2>
+<p>伪列--无需声明可以直接使用功能的隐藏列（rownum就是伪列）<br />
+<img src="media/16172485392174/16174288102644.jpg" alt="" /></p>
+<h2><a id="sql-server-2000%E6%97%A7%E7%89%88%E5%BE%AE%E8%BD%AF%E5%85%AC%E5%8F%B8" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>SQL Server 2000 旧版 (微软公司)</h2>
+<p><img src="media/16172485392174/16174288242713.jpg" alt="" /></p>
+<h2><a id="sql-server-2012" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>SQL Server 2012+</h2>
+<p>offset 4 rows--&gt;偏移4行。。起始行号从第5行开始<br />
+fetch next 5 rows--向后取多少行<br />
+<img src="media/16172485392174/16174288365331.jpg" alt="" /></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis Plungin PageHelper 原理：]]></title>
+    <link href="http://xiongmingcai.top/16174293980417.html"/>
+    <updated>2021-04-03T13:56:38+08:00</updated>
+    <id>http://xiongmingcai.top/16174293980417.html</id>
+    <content type="html"><![CDATA[
+<p>在执行原有要sql的基础上进行分析，自动生成分页以及select count(*)这样的语句，因为涉及对原始sql的分析和解析，所以交给了jsqlparser这个sql解释器组件，所有必须要对其进行引用，具体的sql执行过程在执行后即可查看。</p>
+<p>##PageHelper使用流程</p>
+<ul>
+<li>1，maven引入PageHelop和jsqlparser</li>
+</ul>
+<blockquote>
+<p>注意：pagehelper5.1.10后，因为采用了新的api，jsqlparser版本必须是2.0及以上的才可以适配</p>
+</blockquote>
+<pre><code class="language-xml">&lt;!--pom.xml--&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;com.github.pagehelper&lt;/groupId&gt;
+    &lt;artifactId&gt;pagehelper&lt;/artifactId&gt;
+    &lt;version&gt;5.1.10&lt;/version&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+    &lt;groupId&gt;com.github.jsqlparser&lt;/groupId&gt;
+    &lt;artifactId&gt;jsqlparser&lt;/artifactId&gt;
+    &lt;version&gt;2.0&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<ul>
+<li>2，mybatis-config.xml增加Plungin配置</li>
+</ul>
+<pre><code class="language-xml">&lt;plugins&gt;
+    &lt;plugin interceptor=&quot;com.github.pagehelper.PageInterceptor&quot;&gt;
+        &lt;!--指定对应的数据库，这个可以不写，插件会自动识别，但是严谨角度建议还是写一下--&gt;
+        &lt;property name=&quot;helperDialect&quot; value=&quot;mysql&quot;/&gt;
+        &lt;!--开启分页合理化（如输入第0页时，展示第一页数据，输入超过最大页数的数据时候，展示最大页数的数据）--&gt;
+        &lt;property name=&quot;reasonable&quot; value=&quot;true&quot;/&gt;
+    &lt;/plugin&gt;
+&lt;/plugins&gt;
+</code></pre>
+<pre><code class="language-xml">&lt;!--mapper文件配置--&gt;
+&lt;select id=&quot;selectPage&quot; resultType=&quot;com.imooc.mybatis.entity.Goods&quot;&gt;
+    select * from t_goods where current_price &amp;lt;1000
+&lt;/select&gt;
+</code></pre>
+<ul>
+<li>3，代码中使用PageHelper.startPage()自动分页</li>
+</ul>
+<pre><code class="language-java">public void testSelectPage() {
+    long st = new Date().getTime();
+    SqlSession sqlSession = null;
+    try {
+        sqlSession = MyBatisUtils.openSession();
+        PageHelper.startPage(2, 10);
+        Page&lt;Goods&gt; page = (Page) sqlSession.selectList(&quot;goods.selectPage&quot;);
+         System.out.println(&quot;当前页数：&quot; + page.getPageNum());
+        System.out.println(&quot;总条数：&quot; + page.getTotal());
+        System.out.println(&quot;总页数：&quot; + page.getPages());
+        System.out.println(&quot;开始页数：&quot; + page.getStartRow());
+        System.out.println(&quot;结束页数：&quot; + page.getEndRow());
+        List&lt;Goods&gt; goods = page.getResult();
+        for (Goods goods1 : goods) {
+            System.out.println(goods1.getTitle());
+        }
+         long gt = new Date().getTime();
+            System.out.println(&quot;执行时间：&quot; + (gt - st) + &quot;毫秒。&quot;);
+    } catch (Exception e) {
+        throw e;
+    } finally {
+        MyBatisUtils.closeSqlSession(sqlSession);
+    }
+}
+</code></pre>
+<h2><a id="%E4%BD%9C%E4%B8%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>作业</h2>
+<p>使用MyBatis所学知识完成如下练习</p>
+<ul>
+<li>1、使用c3p0的方式管理数据库连接</li>
+<li>2、结合注解以及批处理方式向教师表（teacher）中添加500条数据</li>
+<li>3、结合注解使用分页插件PageHelper进行分页查询，查询第3页的数据<br />
+教师表结构（参考）<br />
+<img src="media/16174293980417/16175147432902.png" alt="" style="width:618px;" /></li>
+</ul>
+<pre><code class="language-sql">create table teacher
+(
+    id          int auto_increment primary key,
+    name        varchar(20)  not null,
+    sex         varchar(20)  not null,
+    j_no        int          not null comment '工号',
+    subjects    varchar(20)  not null comment '所教学科',
+    grade       varchar(20)  not null comment '所属年级',
+    description varchar(255) not null
+);
+</code></pre>
+<h2><a id="pagehelper-startpage-pagenum-pagesize%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>PageHelper.startPage(pageNum, pageSize)相关问题</h2>
+<p>PageHelper.startPage(pageNum, pageSize)放在查询sql的前面就对该查询结果有效</p>
+<ul>
+<li>分页查出所有的结果，或者分页只查出pageSize的条数，total总数不对，请看下面2个红框内源码，正常情况从数据库直接查询出来的结果都是Page类型，而自己拼装的集合结果一般是Collection，这样直接从数据库查询出的结果可以分页成功，而自己拼装的集合的size是直接</li>
+</ul>
+<p>this.size = list.size()，所以总size，也就是total会不对，这个时候需要转成page类型才能分页成功。</p>
+<p><img src="media/16174293980417/16202943264548.png" alt="" /></p>
+<p>————————————————<br />
+版权声明：本文为CSDN博主「CSU_Dennis」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。<br />
+原文链接：<a href="https://blog.csdn.net/Dennis_Wu_/article/details/102910656">https://blog.csdn.net/Dennis_Wu_/article/details/102910656</a></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis配置C3P0连接池：]]></title>
+    <link href="http://xiongmingcai.top/16174294042568.html"/>
+    <updated>2021-04-03T13:56:44+08:00</updated>
+    <id>http://xiongmingcai.top/16174294042568.html</id>
+    <content type="html"><![CDATA[
+<p>MyBatis虽自带连接池POOLED，但是我们不推荐使用，推荐使用诸如C3P0之类的市面上的主流连接池</p>
+<h3><a id="1%E5%AF%BC%E5%85%A5%E4%BE%9D%E8%B5%96" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>1. 导入依赖</h3>
+<pre><code class="language-xml">&lt;dependency&gt;
+    &lt;groupId&gt;com.mchange&lt;/groupId&gt;
+    &lt;artifactId&gt;c3p0&lt;/artifactId&gt;
+    &lt;version&gt;0.9.5.4&lt;/version&gt;
+&lt;/dependency&gt;
+</code></pre>
+<h3><a id="2%EF%BC%8C%E5%88%9B%E5%BB%BAc3p0%E4%B8%8Emybatis%E5%85%BC%E5%AE%B9%E7%9A%84%E6%95%B0%E6%8D%AE%E6%BA%90%E5%B7%A5%E5%8E%82%E7%B1%BB%EF%BC%88%E5%85%B6%E5%AE%83%E8%BF%9E%E6%8E%A5%E6%B1%A0%E5%90%8C%E7%90%86%EF%BC%89" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>2，创建C3P0与MyBatis兼容的数据源工厂类（其它连接池同理）</h3>
+<p>src/main/java/top/xiongmingcai/datasource/C3P0DataSourceFactory.java</p>
+<pre><code class="language-java">/**
+ * C3P0与mybatis兼容使用的数据源工厂类
+ */
+public class C3P0DataSourceFactory extends UnpooledDataSourceFactory {
+    public C3P0DataSourceFactory() {
+        this.dataSource = new ComboPooledDataSource();
+    }
+}
+</code></pre>
+<h3><a id="3%EF%BC%8C%E4%BF%AE%E6%94%B9mybatis-config-xml%E6%96%87%E4%BB%B6" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>3，修改mybatis-config.xml文件</h3>
+<pre><code class="language-xml">&lt;environment id=&quot;c3p0&quot;&gt;
+&lt;transactionManager type=&quot;JDBC&quot;/&gt;
+&lt;dataSource type=&quot;top.xiongmingcai.datasource.C3P0DataSourceFactory&quot;&gt;
+    &lt;property name=&quot;driverClass&quot; value=&quot;com.mysql.cj.jdbc.Driver&quot;/&gt;
+    &lt;property name=&quot;jdbcUrl&quot;
+              value=&quot;jdbc:mysql://localhost:3306/babytun?useUnicode=true&amp;amp;characterEncoding=UTF-8&amp;amp;useSSL=false&amp;amp;serverTimezone=GMT&quot;/&gt;
+    &lt;property name=&quot;user&quot; value=&quot;root&quot;/&gt;
+    &lt;property name=&quot;password&quot; value=&quot;NewPassword&quot;/&gt;
+    &lt;property name=&quot;initialPoolSize&quot; value=&quot;5&quot;/&gt;
+    &lt;property name=&quot;maxPoolSize&quot; value=&quot;20&quot;/&gt;
+    &lt;property name=&quot;minPoolSize&quot; value=&quot;5&quot;/&gt;
+&lt;/dataSource&gt;
+&lt;/environment&gt;
+</code></pre>
+<h2><a id="%E5%90%AF%E5%8A%A8c3p0%E8%BF%9E%E6%8E%A5%E6%B1%A0" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>启动C3P0连接池</h2>
+<p>完成了前面的准备工作和信息配置，下面就正式进入连接池的操作了。</p>
+<pre><code class="language-java">import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;     
+import com.mchange.v2.c3p0.ComboPooledDataSource;  
+    
+    /** 
+     * 数据库工具类 
+     * @author cloud 
+     * 
+     */  
+    public class C3P0Util {  
+        static ComboPooledDataSource cpds=null;  
+        static{  
+            cpds = new ComboPooledDataSource();//这是mysql数据库  
+        }  
+        /** 
+         * 获得数据库连接 
+         * @return   Connection 
+         */  
+        public static Connection getConnection(){  
+            try {  
+                return cpds.getConnection();  
+            } catch (SQLException e) {  
+                e.printStackTrace(); 
+                System.out.println(&quot;连接失败&quot;);
+                return null;  
+            }  
+        }  
+          
+        /** 
+         * 放回连接对象，close方法并不是关闭，而是更改该连接对象的状态为可用。 
+         * @param conn   
+         */  
+        public static void close(Connection conn){  
+            if(conn!=null){  
+                try {  
+                    conn.close();  
+                } catch (SQLException e) {  
+                    e.printStackTrace();  
+                }  
+            }  
+        }  
+}  
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis动态SQL]]></title>
+    <link href="http://xiongmingcai.top/16175083468512.html"/>
+    <updated>2021-04-04T11:52:26+08:00</updated>
+    <id>http://xiongmingcai.top/16175083468512.html</id>
+    <content type="html"><![CDATA[
+<p>动态SQL：动态SQL是指根据参数数据动态组织SQL的技术。</p>
+<p>动态SQL的应用场景：<br />
+比如淘宝搜索的时候，可以动态的选择比如品牌之类的选项<br />
+<img src="media/16172485392174/16172500056497.jpg" alt="" style="width:960px;" /></p>
+<p>##配置<br />
+<img src="media/16172485392174/16172486645034.jpg" alt="" /></p>
+<ul>
+<li><code>&lt;where&gt;</code>会自动判断后面的AND是否会影响sql语法正确，如果影响则自动去掉AND</li>
+</ul>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Config 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;goods&quot;&gt;
+&lt;select id=&quot;dynamicSQL&quot; parameterType=&quot;java.util.Map&quot; resultType=&quot;com.imooc.mybatis.entity.Goods&quot;&gt;
+    select * from t_goods
+    &lt;where&gt;
+        &lt;if test=&quot;categoryId!=null&quot;&gt;
+            and category_id=#{categoryId}&gt;
+        &lt;/if&gt;
+        &lt;if test=&quot;currentPrice!=null&quot;&gt;
+            and current_price &amp;lt; #{currentPrice}
+        &lt;/if&gt;
+    &lt;/where&gt;
+&lt;/select&gt;
+&lt;/mapper&gt;
+
+</code></pre>
+<ul>
+<li><code>where</code> 标签只能小写</li>
+</ul>
+<h2><a id="%E6%B5%8B%E8%AF%95" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>测试</h2>
+<pre><code class="language-java">  @Test
+    public void testDynamic() {
+        SqlSession sqlSession = null;
+        try {
+            sqlSession = MyBatisUtils.openSession();
+            Map map = new HashMap();
+            map.put(&quot;categoryId&quot;, 44);
+            map.put(&quot;currentPrice&quot;, 100);
+            List&lt;Goods&gt; list = sqlSession.selectList(&quot;goods.dynamicSQL&quot;, map);
+            for (Goods goods:list){
+                System.out.println(goods.getGoodsId()+&quot;-&quot;+goods.getTitle()+&quot;-&quot;+goods.getCurrentPrice());
+            }
+                sqlSession.commit();
+        } catch (Exception e) {
+            sqlSession.rollback();
+        } finally {
+            MyBatisUtils.closeSqlSession(sqlSession);
+        }
+    }
+}
+</code></pre>
+<p> 我们可以随意更改配置参数，比如上面我们在xml文件里配置了2个查询约束条件，在测试的时候，我们可以对这2个参数进行赋值，也可以不进行赋值，使用十分灵活。</p>
+<h2><a id="%E4%BD%9C%E4%B8%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>作业</h2>
+<p>1、创建学生表student，表结构如下：<br />
+<img src="media/16172485392174/16172638102385.png" alt="" /></p>
+<p>2、为学生表添加内容</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left">id</th>
+<th style="text-align: left">reg_no</th>
+<th style="text-align: left">name</th>
+<th style="text-align: left">sex</th>
+<th style="text-align: left">age</th>
+<th style="text-align: left">grade</th>
+<th style="text-align: left">major</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left">1</td>
+<td style="text-align: left">20171201</td>
+<td style="text-align: left">梅长苏</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">31</td>
+<td style="text-align: left">2008</td>
+<td style="text-align: left">哲学系</td>
+</tr>
+<tr>
+<td style="text-align: left">2</td>
+<td style="text-align: left">20171202</td>
+<td style="text-align: left">萧景琰</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">30</td>
+<td style="text-align: left">2008</td>
+<td style="text-align: left">政治系</td>
+</tr>
+<tr>
+<td style="text-align: left">3</td>
+<td style="text-align: left">20171203</td>
+<td style="text-align: left">飞流</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">18</td>
+<td style="text-align: left">2016</td>
+<td style="text-align: left">人体系</td>
+</tr>
+<tr>
+<td style="text-align: left">4</td>
+<td style="text-align: left">20171204</td>
+<td style="text-align: left">萧景桓</td>
+<td style="text-align: left">男</td>
+<td style="text-align: left">35</td>
+<td style="text-align: left">2006</td>
+<td style="text-align: left">政治系</td>
+</tr>
+<tr>
+<td style="text-align: left">5</td>
+<td style="text-align: left">20171205</td>
+<td style="text-align: left">宫羽</td>
+<td style="text-align: left">女</td>
+<td style="text-align: left">25</td>
+<td style="text-align: left">2013</td>
+<td style="text-align: left">声学系</td>
+</tr>
+<tr>
+<td style="text-align: left">6</td>
+<td style="text-align: left">20171206</td>
+<td style="text-align: left">霓凰</td>
+<td style="text-align: left">女</td>
+<td style="text-align: left">31</td>
+<td style="text-align: left">2008</td>
+<td style="text-align: left">国际关系专业</td>
+</tr>
+<tr>
+<td style="text-align: left">7</td>
+<td style="text-align: left">20171207</td>
+<td style="text-align: left">秦般弱</td>
+<td style="text-align: left">女</td>
+<td style="text-align: left">30</td>
+<td style="text-align: left">2009</td>
+<td style="text-align: left">通讯专业</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-sql">create table student
+(
+    id     int auto_increment
+        primary key,
+    reg_no int         not null,
+    name   varchar(20) not null,
+    sex    varchar(20) not null,
+    age    int         not null,
+    grade  varchar(50) not null,
+    major  varchar(50) null
+);
+
+INSERT INTO babytun.student (reg_no, name, sex, age, grade, major) VALUES (20171201, '梅长苏', '男', 31, '2008', '哲学系');
+INSERT INTO babytun.student (reg_no, name, sex, age, grade, major) VALUES (20171202, '萧景琰', '男', 30, '2008', '政治系');
+INSERT INTO babytun.student (reg_no, name, sex, age, grade, major) VALUES (20171203, '飞流', '男', 18, '2016', '人体系');
+INSERT INTO babytun.student (reg_no, name, sex, age, grade, major) VALUES (20171204, '萧景桓', '男', 35, '2006', '政治系');
+INSERT INTO babytun.student (reg_no, name, sex, age, grade, major) VALUES (20171205, '宫羽', '女', 25, '2013', '声学系');
+INSERT INTO babytun.student (reg_no, name, sex, age, grade, major) VALUES (20171206, '霓凰', '女', 31, '2008', '国际关系专业');
+INSERT INTO babytun.student (reg_no, name, sex, age, grade, major) VALUES (20171207, '秦般弱', '女', 30, '2009', '通讯专业');
+</code></pre>
+<p>3、使用动态SQL，在xml文件中完成查询功能。可以查询年龄大于30，性别为男的学生信息。</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Config 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;student&quot;&gt;
+    &lt;select id=&quot;dynamicSQl&quot;  resultType=&quot;top.xiongmingcai.entity.Student&quot; parameterType=&quot;java.util.Map&quot;&gt;
+        select * from student
+        &lt;where&gt;
+            &lt;if test=&quot;grade&quot;&gt;
+                and age &amp;gt; #{age}
+            &lt;/if&gt;
+            &lt;if test=&quot;sex&quot;&gt;
+                and sex =  #{sex}
+            &lt;/if&gt;
+        &lt;/where&gt;
+    &lt;/select&gt;
+&lt;/mapper&gt;
+</code></pre>
+<p>4、在测试类中进行测试。分为三种情况：</p>
+<ul>
+<li>
+<p>1）查询所有学生信息</p>
+</li>
+<li>
+<p>2）查询年龄大于30的学生信息</p>
+</li>
+<li>
+<p>3）查询年龄大于30，并且性别为男的学生信息</p>
+</li>
+</ul>
+<pre><code class="language-java">   @Test
+    public void dynamicSQl2() {
+        sqlSession = MyBatisUtils.openSession();
+        Map&lt;Object, Object&gt; param = new HashMap&lt;&gt;();
+
+        param.put(&quot;sex&quot;, &quot;男&quot;);
+        param.put(&quot;age&quot;, 30);
+
+        List&lt;Student&gt; student = sqlSession.selectList(&quot;student.dynamicSQl&quot;, param);
+        student.forEach(System.out::println);
+
+    }
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis增删改查]]></title>
+    <link href="http://xiongmingcai.top/16175162093629.html"/>
+    <updated>2021-04-04T14:03:29+08:00</updated>
+    <id>http://xiongmingcai.top/16175162093629.html</id>
+    <content type="html"><![CDATA[
+<h2><a id="mybatis%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis环境配置</h2>
+<h3><a id="%E6%96%B0%E5%BB%BAmaven%E5%B7%A5%E7%A8%8B%EF%BC%8C%E5%AF%BC%E5%85%A5%E5%BF%85%E8%A6%81%E7%9A%84jar%E5%8C%85" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>新建maven工程，导入必要的jar包</h3>
+<pre><code class="language-xml">    &lt;dependencies&gt;      
+        &lt;dependency&gt;
+            &lt;groupId&gt;junit&lt;/groupId&gt;
+            &lt;artifactId&gt;junit&lt;/artifactId&gt;
+            &lt;version&gt;4.12&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.mybatis&lt;/groupId&gt;
+            &lt;artifactId&gt;mybatis&lt;/artifactId&gt;
+            &lt;version&gt;3.5.1&lt;/version&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;mysql&lt;/groupId&gt;
+            &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;
+            &lt;version&gt;8.0.23&lt;/version&gt;
+        &lt;/dependency&gt;   
+   &lt;/dependencies&gt;
+</code></pre>
+<h3><a id="%E5%88%9B%E5%BB%BA%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6mybatis-config-xml%EF%BC%88%E9%BB%98%E8%AE%A4%E5%8F%AB%E8%BF%99%E4%B8%AA%EF%BC%8C%E5%8F%AF%E6%9B%B4%E6%94%B9%EF%BC%89" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>创建配置文件mybatis-config.xml（默认叫这个，可更改）</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;!DOCTYPE configuration
+        PUBLIC &quot;-//mybatis.org//DTD Config 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-config.dtd&quot;&gt;
+&lt;configuration&gt;
+    &lt;environments default=&quot;development&quot;&gt;
+        &lt;environment id=&quot;development&quot;&gt;
+            &lt;transactionManager type=&quot;JDBC&quot;/&gt;
+            &lt;dataSource type=&quot;POOLED&quot;&gt;
+                &lt;property name=&quot;driver&quot; value=&quot;com.mysql.cj.jdbc.Driver&quot;/&gt;
+                &lt;property name=&quot;url&quot; value=&quot;jdbc:mysql://localhost:3306/babytun&quot;/&gt;
+                &lt;property name=&quot;username&quot; value=&quot;root&quot;/&gt;
+                &lt;property name=&quot;password&quot; value=&quot;NewPassword&quot;/&gt;
+            &lt;/dataSource&gt;
+        &lt;/environment&gt;
+    &lt;/environments&gt;
+&lt;/configuration&gt;
+</code></pre>
+<ul>
+<li>
+<p>mybatis才有xml格式配置数据库环境信息</p>
+</li>
+<li>
+<p>mybatis环境配置标签<environment></p>
+</li>
+<li>
+<p>environment包含数据库驱动，url，用户名，密码</p>
+</li>
+</ul>
+<h2><a id="%E9%85%8D%E7%BD%AEsqlsessionfactory%E5%85%A8%E5%B1%80%E5%94%AF%E4%B8%80%E5%B7%A5%E5%85%B7%E7%B1%BB" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>配置SqlSessionFactory全局唯一工具类</h2>
+<p>1，SqlSessionFactory是mybatis的核心对象</p>
+<p>2，用于初始化mybatis，创建SqlSession对象</p>
+<p>3，保证SqlSessionFactory在应用中全局唯一，通常我们通过静态类方式对它进行初始化，SqlSessionFactory本质就是通过加载配置文件，来完成mybatis框架的初始化工作</p>
+<pre><code class="language-java">public class MyBatisUtils {
+    // 利用static属于类不属于对象，且全局唯一
+    private static SqlSessionFactory sqlSessionFactory = null;
+    // 利用静态块在初始化类时实例化sqlSessionFactory
+    static {
+        Reader reader = null;
+        try {
+            reader = Resources.getResourceAsReader(&quot;mybatis-config.xml&quot;);
+            sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // 初始化错误时抛出异常ExceptionInInitializerError通知调用者
+            throw new ExceptionInInitializerError();
+        }
+    }
+
+    //创建一个新的SqlSession对象
+    public static SqlSession openSession() {
+        return sqlSessionFactory.openSession();
+    }
+
+    //关闭SqlSession对象
+    public static void closeSqlSession(SqlSession sqlSession) {
+        if (sqlSession != null) {
+            sqlSession.close();
+        }
+    }
+}
+
+</code></pre>
+<p>1，SqlSession是mybatis操作数据库的核心对象</p>
+<p>2，SqlSession使用jdbc方式与数据库交互，不那么严谨的我们可以把一个SqlSession是一个扩展过的connection数据库连接对象，在原有的connection基础上封装了大量实用方法</p>
+<p>3，SqlSession对象提供了数据表CRUD对应方法</p>
+<blockquote>
+<p><a href="16172477916883.html">MyBaits 使用Lambda方式连接MySQL</a></p>
+</blockquote>
+<h2><a id="%E6%B5%8B%E8%AF%95%E8%BF%9E%E6%8E%A5" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>测试连接</h2>
+<pre><code class="language-java">package top.xiongmingcai.utlis;
+
+import junit.framework.TestCase;
+import org.apache.ibatis.session.SqlSession;
+
+public class MyBatisUtilsTest extends TestCase {
+    public void testOpenSession() {
+        SqlSession sqlSession = MyBatisUtils.openSession();
+        MyBatisUtils.closeSqlSession(sqlSession);
+    }
+
+}
+</code></pre>
+<h2><a id="mybatis%E6%95%B0%E6%8D%AE%E6%9F%A5%E8%AF%A2" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis数据查询</h2>
+<p><img src="media/16175162093629/16175282711792.jpg" alt="" style="width:720px;" /></p>
+<h3><a id="1%E5%88%9B%E5%BB%BA%E5%AE%9E%E4%BD%93%E7%B1%BB%EF%BC%88-entity%EF%BC%89" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>1.  创建实体类（Entity）</h3>
+<pre><code class="language-java">package top.xiongmingcai.entity;
+
+public class Teacher {
+    private String id;
+    private String name;
+    private String sex;
+    private String jNo;
+    private String subjects;
+    private String grade;
+    private String description;
+........
+}
+
+</code></pre>
+<h3><a id="2%E5%88%9B%E5%BB%BA-mapper-xml%EF%BC%9A%E8%AF%B4%E6%98%8E%E5%AE%9E%E4%BD%93%E7%B1%BB%E5%92%8C%E5%93%AA%E4%B8%AA%E8%A1%A8%EF%BC%8C%E5%B1%9E%E6%80%A7%E5%92%8C%E8%A1%A8%E9%87%8C%E5%93%AA%E4%B8%AA%E5%AD%97%E6%AE%B5%E5%AF%B9%E5%BA%94" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>2. 创建Mapper XML ：说明实体类和哪个表，属性和表里哪个字段对应</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; ?&gt;
+&lt;!DOCTYPE configuration
+        PUBLIC &quot;-//mybatis.org//DTD Config 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-config.dtd&quot;&gt;
+&lt;configuration&gt;
+    &lt;!--默认环境配置--&gt;
+    &lt;environments default=&quot;dev&quot;&gt;
+        &lt;!--支持配置多套环境--&gt;
+        &lt;environment id=&quot;dev&quot;&gt;
+            &lt;transactionManager type=&quot;JDBC&quot;&gt;&lt;/transactionManager&gt;
+            &lt;!--采用连接池方式管理数据库连接--&gt;
+            &lt;dataSource type=&quot;POOLED&quot;&gt;
+                &lt;!--配置数据库连接信息--&gt;
+                &lt;property name=&quot;driver&quot; value=&quot;com.mysql.cj.jdbc.Driver&quot;/&gt;
+                &lt;property name=&quot;url&quot; value=&quot;jdbc:mysql://localhost:3306/babytun&quot;/&gt;
+                &lt;property name=&quot;username&quot; value=&quot;root&quot;/&gt;
+                &lt;property name=&quot;password&quot; value=&quot;NewPassword&quot;/&gt;
+            &lt;/dataSource&gt;
+        &lt;/environment&gt;
+    &lt;/environments&gt;
+&lt;/configuration&gt;
+</code></pre>
+<h3><a id="3%E5%9C%A8-mapper-xml%E4%B8%AD%E7%BC%96%E5%86%99-select-sql%E6%A0%87%E7%AD%BE%EF%BC%8C%E4%B9%A6%E5%86%99sql%E8%AF%AD%E5%8F%A5" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>3.  在Mapper XML中编写<code>&lt;select&gt;</code>sql标签，书写sql语句</h3>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!DOCTYPE mapper
+        PUBLIC &quot;-//mybatis.org//DTD Mapper 3.0//EN&quot;
+        &quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;
+&lt;mapper namespace=&quot;teacher&quot;&gt;
+    &lt;!-- 查询全部用户 --&gt;
+    &lt;select id=&quot;queryUsers&quot; resultType=&quot;top.xiongmingcai.entity.Teacher&quot;&gt;
+        select * from teacher ;
+    &lt;/select&gt;
+&lt;/mapper&gt;
+</code></pre>
+<h3><a id="4%E5%9C%A8-mabatis-config-xml%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%B8%AD%E8%AE%BE%E7%BD%AE%E9%A9%BC%E5%B3%B0%E5%91%BD%E5%90%8D%E6%98%A0%E5%B0%84" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>4.  在mabatis-config.xml配置文件中设置驼峰命名映射</h3>
+<pre><code class="language-xml">   &lt;!--设置成支持驼峰命名--&gt;
+    &lt;settings&gt;
+        &lt;setting name=&quot;mapUnderscoreToCamelCase&quot; value=&quot;true&quot;/&gt;
+    &lt;/settings&gt;
+</code></pre>
+<h3><a id="5%E5%9C%A8-mabatis-config-xml%E4%B8%AD%E6%96%B0%E5%A2%9E-mapper%E6%96%87%E4%BB%B6%E5%A3%B0%E6%98%8E" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>5.  在mabatis-config.xml中新增<mapper>文件声明</h3>
+<pre><code class="language-xml">  &lt;!-- 映射文件 --&gt;
+    &lt;mappers&gt;
+        &lt;mapper resource=&quot;mappers/Teacher.xml&quot;/&gt;
+        &lt;!-- &lt;mapper class=&quot;top.xiongmingcai.dao.StudentDao&quot;/&gt;--&gt;
+        &lt;!-- &lt;package name=&quot;top.xiongmingcai.dao&quot;/&gt; --&gt;
+    &lt;/mappers&gt;
+</code></pre>
+<h3><a id="6%E5%9C%A8-sqlsession%E6%89%A7%E8%A1%8Cselect%E8%AF%AD%E5%8F%A5" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>6.  在SqlSession执行select语句</h3>
+<pre><code class="language-java">    public void testQueryUsers() {
+        SqlSession sqlSession = null;
+
+        try {
+            sqlSession = MyBatisUtils.openSession();
+            List&lt;Teacher&gt; list = sqlSession.selectList(&quot;teacher.queryUsers&quot;);
+            System.out.println(&quot;size:&quot; + list.size());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            MyBatisUtils.closeSqlSession(sqlSession);
+        }
+    }
+
+</code></pre>
+<p><img src="media/16175162093629/16175304816840.jpg" alt="" style="width:720px;" /></p>
+<h2><a id="" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a></h2>
+<p>SQL传参<br />
+需要动态传入参数的过程，Sql语句配置文件中的select语句中使用parameterType属性指定参数类。</p>
+<h3><a id="%E4%B8%80%E3%80%81%E5%8D%95%E5%8F%82%E6%95%B0" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>一、单参数</h3>
+<p>在Sql语句配置文件中新增查询标签，增加了parameterType属性，其他地方输入的一个参数，会自动匹配到#{value}的位置，从而形成一条完整的sql语句。</p>
+<pre><code class="language-xml">&lt;select id=&quot;queryUserById&quot; resultType=&quot;top.xiongmingcai.entity.Teacher&quot; parameterType=&quot;Integer&quot;&gt;
+        select * from teacher where id = #{value };
+&lt;/select&gt;t&gt;
+</code></pre>
+<pre><code class="language-java">Teacher teacher= sqlSession.selectOne(&quot;teacher.queryUserById&quot;, 2);
+</code></pre>
+<blockquote>
+<p>parameterType指定参数类型(需要是类名)，如Integer。</p>
+</blockquote>
+<h3><a id="%E4%BA%8C%E3%80%81%E5%A4%9A%E5%8F%82%E6%95%B0" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>二、多参数</h3>
+<p>parameterType值为:java.util.Map<br />
+配置文件中书写查询语句，注意到这里写了三个参数，这三个参数对应着传入的Map的键，sql语句会把这三个键对应的值匹配到相应位置，从而形成一条完整的sql语句。</p>
+<pre><code class="language-xml">&lt;select id=&quot;queryUserRangeId&quot; resultType=&quot;top.xiongmingcai.entity.Teacher&quot; parameterType=&quot;java.util.Map&quot;&gt;
+    select * from teacher where id between #{min} and #{max} limit #{limt}
+&lt;/select&gt;
+</code></pre>
+<blockquote>
+<p>parameterType值为:java.util.Map</p>
+</blockquote>
+<p><img src="media/16175162093629/16175340832138.jpg" alt="" style="width:720px;" /></p>
+<h2><a id="%E5%A4%9A%E8%A1%A8%E5%85%B3%E8%81%94%E6%9F%A5%E8%AF%A2linkedhashmap%E6%96%B9%E6%A1%88" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>多表关联查询 LinkedHashMap方案</h2>
+<p>之前的查询都是返回固定的Goods对象，这是因为查询语句只返回了t_goods表中的一条条数据，有实体类与之对应，但是如果我们进行多表级联查询时，返回的字段就无法用一个确定的实体对应，这时，resultType就要设置为**<code>java.util.Map,但是我们想让返回的结果字段是按照插入顺序，那就要设置为java.util.LinkedHashMap.</code>**<br />
+在配置文件中的sql语句:<br />
+<img src="media/16175162093629/16175345520691.png" alt="" style="width:780px;" /><br />
+Java程序语句:<br />
+<img src="media/16175162093629/16175345623991.png" alt="" style="width:780px;" /><br />
+总结：</p>
+<p>多表查询时配置xml文件，resultType要使用map类型，最好是使用LinkedHashMap，因为直接使用map时产生的结果是无序的。</p>
+<p>使用LinkedHashMap时，Mybatis会将每一条记录包装为LinkedHashMap对象，key是字段名，value是字段对应的值，字段类型根据表结构进行自动判断</p>
+<ul>
+<li>优点：易于扩展，易于使用。</li>
+<li>缺点：太过灵活，无法进行编译时检查</li>
+</ul>
+<h2><a id="%E5%A4%9A%E8%A1%A8%E5%85%B3%E8%81%94%E6%9F%A5%E8%AF%A2resultmap-gto%E6%96%B9%E6%A1%88" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>多表关联查询 ResultMap GTO方案</h2>
+<p>Map虽然灵活，扩展强大，但是开发的时候体验不好，但是如果不使用map，会衍生出新的问题，那么如何使用对象的方式保存关联查询的结果呢，这个时候我们可以使用ResultMap结果映射来解决这个问题。</p>
+<ul>
+<li>
+<p>ResultMap可以将查询结果映射为复杂类型的java对象</p>
+</li>
+<li>
+<p>ResultMap适用于java对象保存多表关联结果</p>
+</li>
+<li>
+<p>ResultMap支持对象关联查询等高级特性</p>
+</li>
+</ul>
+<p>通常约定：（Data Transfer Object--数据传输对象）DTO结尾的类--承载Mybatis表链接查询的结果（优点是结果在编译和阅读代码时即可确定，缺点是需要手动设置大量标签）。</p>
+<p>案例</p>
+<ol>
+<li>
+<p>已有实体类Goods和Category，分别对应t_goods表和t_category表,创建GoodDTO类如图,并添加相应get和set方法:<br />
+<img src="media/16175162093629/16175352563601.png" alt="" style="width:780px;" /></p>
+</li>
+<li>
+<p>在goods.xml中设置sql语句配置<br />
+<img src="media/16175162093629/16175353202924.png" alt="" /></p>
+</li>
+<li>
+<p>java程序:<br />
+<img src="media/16175162093629/16175366371049.png" alt="" /></p>
+</li>
+</ol>
+<h2><a id="%E5%A4%9A%E8%A1%A8%E8%81%94%E6%9F%A5" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>多表联查</h2>
+<p><a href="16174290208241.html">MyBatis多表级联查询</a></p>
+<h2><a id="mybatis%E6%89%B9%E9%87%8F%E6%8F%92%E5%85%A5%E6%95%B0%E6%8D%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis 批量插入数据</h2>
+<p><a href="16174294104179.html"> MyBatis 批量插入和批量删除</a></p>
+<h2><a id="mybatis%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis 删除数据</h2>
+<p>因为大多数删除操作是根据主键来进行的，因此在xml文件配置的时候，parameterType只需要声明主键类型是integer即可。</p>
+<pre><code class="language-xml">
+&lt;delete id=&quot;delete&quot; parameterType=&quot;Integer&quot;&gt;
+        DELETE from table  where  id = ......
+&lt;/delete&gt;
+</code></pre>
+<h2><a id="mybatis%E6%89%B9%E9%87%8F%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis 批量删除数据</h2>
+<p><a href="16174294104179.html"> MyBatis 批量插入和批量删除</a></p>
+<h2><a id="mybatis%E6%9B%B4%E6%96%B0%E6%95%B0%E6%8D%AE" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis 更新数据</h2>
+<p>更新是对已有数据进行处理，不建议通过手动set来组织原始数据，推荐先获取原有数据，再对原有数据进行更新操作，保证数据的影响是最小的</p>
+<pre><code class="language-xml">&lt;update id=&quot;update&quot; parameterType=&quot;top.xiongmingcai.entity.Goods&quot;&gt;
+        update t_goods
+        set title = #{title}
+        where goods_id = #{goods_id};
+&lt;/update&gt;
+</code></pre>
+<pre><code class="language-java">   @Test
+    public void update() {
+        Goods goods = null;
+        try {
+            goods = sqlSession.selectOne(&quot;goods.selectById&quot;, 740);
+            goods.setTitle(&quot;测试商品3&quot;);
+
+            sqlSession.update(&quot;goods.update&quot;, goods);
+            sqlSession.commit();
+        } catch (Exception e) {
+            if (sqlSession != null) {
+                sqlSession.rollback();
+            }
+            e.printStackTrace();
+        }
+    }
+
+</code></pre>
+<blockquote>
+<p>更新不建议set获取实体，建议使用selectbyid进行数据筛选 确保影响最少行数</p>
+</blockquote>
+<h2><a id="mybatis" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis</h2>
+<p>${ }--&gt;传递参数时，不会经过任何转译，直接放在SQL语句对应的位置</p>
+<p>但是通常在一些高级和复杂SQL条件查询时，不得不进行SQL子句拼接，此时可以使用（注意使用时，需要人为控制需要拼接的SQL子句，而不是把拼写子句的功能开放给用户）</p>
+<p>#{ }--&gt;传递参数时，系统会自动将传入的SQL语句，作为完整的条件进行查询，而不是直接拼接到系统底部原有的SQL语句中。</p>
+<pre><code class="language-xml">&lt;select id=&quot;orderBySql&quot; parameterType=&quot;java.util.Map&quot; resultType=&quot;top.xiongmingcai.entity.Goods&quot;&gt;
+        select * from TABLE where tag = #{tag}
+        order by ${order} 
+&lt;/select&gt;
+</code></pre>
+<p>数据排序灵活性示例</p>
+<pre><code class="language-java">  Map&lt;Object, Object&gt; param = new HashMap&lt;&gt;();
+  param.put(&quot;tag&quot;, &quot;手机&quot;);
+  param.put(&quot;order&quot;, &quot;销量 desc&quot;);
+  .......
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[软件开发中的框架:]]></title>
+    <link href="http://xiongmingcai.top/16175257463680.html"/>
+    <updated>2021-04-04T16:42:26+08:00</updated>
+    <id>http://xiongmingcai.top/16175257463680.html</id>
+    <content type="html"><![CDATA[
+<p><img src="media/16175162093629/16175164389117.jpg" alt="" style="width:506px;" /></p>
+<ol>
+<li>
+<p>框架是可被应用开发者定制的应用骨架。</p>
+</li>
+<li>
+<p>框架是一种规则，保证开发者遵循相同的方式开发程序。</p>
+</li>
+<li>
+<p>框架提倡&quot;不要重复造轮子&quot;,对基础功能进行封装。</p>
+</li>
+</ol>
+<p>框架的优点:</p>
+<ul>
+<li>
+<p>极大了提高开发效率。</p>
+</li>
+<li>
+<p>统一的编码规则，利于团队管理。</p>
+</li>
+<li>
+<p>灵活配置得应用，拥有更好的维护性。</p>
+</li>
+</ul>
+<p>SSM三大开发框架:</p>
+<ul>
+<li>
+<p>第一个S是Spring:对象容器框架，对系统各个对象进行有效的管理，是框架的框架，所有其他框架都要基于Spring这个底层框架进行开发。</p>
+</li>
+<li>
+<p>第二个S是Spring MVC:是Spring的一个分支产品，替代Servlet，使我们进行更有效的Web开发。</p>
+</li>
+<li>
+<p>第三个M是MyBatis：简化数据库的交互，底层对JDBC进行了封装和扩展，极大便利了与数据库的交互工作。</p>
+</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis工作流程：]]></title>
+    <link href="http://xiongmingcai.top/16175470845198.html"/>
+    <updated>2021-04-04T22:38:04+08:00</updated>
+    <id>http://xiongmingcai.top/16175470845198.html</id>
+    <content type="html"><![CDATA[
+<p><img src="media/16175470845198/16175471157774.jpg" alt="" /></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MyBatis日志管理]]></title>
+    <link href="http://xiongmingcai.top/16175472898709.html"/>
+    <updated>2021-04-04T22:41:29+08:00</updated>
+    <id>http://xiongmingcai.top/16175472898709.html</id>
+    <content type="html"><![CDATA[
+<p>什么是日志：</p>
+<ul>
+<li>日志是用于记录系统操作事件的记录文件或文件的集合</li>
+<li>日志保存历史数据，是诊断问题以及理解系统优化活动的重要依据</li>
+</ul>
+<p>市面上主流的日志工具，本次主要使用SLF4J和logback进行演示<br />
+日志门面：为java提供了统一的调用接口。相对于插排的规格，插孔设计<br />
+日志实现：logback相当于log4j的升级版。相当于排查的内部实现，不同品牌设计不一致</p>
+<p><img src="media/16175472898709/16175473978767.jpg" alt="" /></p>
+<p><img src="media/16175472898709/16175473821309.jpg" alt="" /></p>
+<h2><a id="mybatis%E9%85%8D%E7%BD%AE-logback" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>MyBatis 配置logback</h2>
+<h3><a id="%E5%AF%BC%E5%85%A5%E5%AF%B9%E5%BA%94%E4%BE%9D%E8%B5%96" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>导入对应依赖</h3>
+<pre><code class="language-xml">&lt;dependency&gt;
+       &lt;groupId&gt;ch.qos.logback&lt;/groupId&gt;
+       &lt;artifactId&gt;logback-classic&lt;/artifactId&gt;
+         &lt;version&gt;1.2.3&lt;/version&gt;
+ &lt;/dependency&gt;
+</code></pre>
+<h3><a id="%E6%B7%BB%E5%8A%A0%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>添加配置文件</h3>
+<p>src/main/resources/logback.xml</p>
+<pre><code class="language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;
+&lt;configuration &gt;
+    &lt;appender name=&quot;console&quot; class=&quot;ch.qos.logback.core.ConsoleAppender&quot;&gt;
+        &lt;encoder&gt;
+            　&lt;pattern&gt;%-4relative [%thread] %-5level %logger{35} - %msg %n&lt;/pattern&gt;
+        &lt;/encoder&gt;
+    &lt;/appender&gt;
+
+    &lt;root level=&quot;debug&quot;&gt;
+        &lt;appender-ref ref=&quot;console&quot;/&gt;
+    &lt;/root&gt;
+&lt;/configuration&gt;
+</code></pre>
+<ul>
+<li>appender 日志向什么位置输出</li>
+<li>pattern 日志输出格式
+<ul>
+<li>
+<p>%d{HH:mm:ss.SSS}--&gt;时间的格式</p>
+</li>
+<li>
+<p>[%thread]--&gt;输出的线程的名字</p>
+</li>
+<li>
+<p>%-5level--&gt;(-5 --&gt;按5个字符进行右对齐)日志的级别</p>
+</li>
+<li>
+<p>%logger{36}--&gt;产生日志的类（最多允许36个字符，超过则使用简写对类路径进行压缩 o.a.i.t.jdbc.JdbcTransaction）</p>
+</li>
+<li>
+<p>%msg--&gt;具体的日志输出内容</p>
+</li>
+<li>
+<p>%n--&gt;表示换行</p>
+</li>
+</ul>
+</li>
+<li>level 日志级别
+<ul>
+<li>
+<p>error：错误--系统的故障日志</p>
+</li>
+<li>
+<p>warn：警告--存在风险或使用不当的日志</p>
+</li>
+<li>
+<p>info：一般性消息//建议在此以上</p>
+</li>
+<li>
+<p>debug：程序内部用于调试信息</p>
+</li>
+<li>
+<p>trace：程序运行的跟踪信息</p>
+</li>
+</ul>
+</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MySQL数据的导入与导出]]></title>
+    <link href="http://xiongmingcai.top/16175486838870.html"/>
+    <updated>2021-04-04T23:04:43+08:00</updated>
+    <id>http://xiongmingcai.top/16175486838870.html</id>
+    <content type="html"><![CDATA[
+<p>数据与备份的区别:</p>
+<ol>
+<li>数据导出，导出的纯粹是业务数据。</li>
+<li>数据备份，备份的是数据文件、日志文件、索引文件等。</li>
+</ol>
+<h2><a id="%E5%AF%BC%E5%87%BAsql%E6%96%87%E4%BB%B6" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>导出SQL文件</h2>
+<pre><code class="language-shell">$ mysqldump -uroot -p [no-data] 数据库名 &gt; 文件夹路径
+</code></pre>
+<ul>
+<li>no-data:只导出表结构，如果不写则导出表结构和数据</li>
+</ul>
+<h2><a id="%E5%AF%BC%E5%85%A5sql%E6%96%87%E4%BB%B6" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>导入SQL文件</h2>
+<h3><a id="%E7%99%BB%E5%BD%95%E6%95%B0%E6%8D%AE%E5%BA%93%E5%91%BD%E4%BB%A4%E8%A1%8C%E4%BA%A4%E4%BA%92" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>登录数据库命令行交互</h3>
+<pre><code class="language-plain_text">$ mysql   -u root --password=NewPassword
+</code></pre>
+<pre><code class="language-sql">mysql&gt; create database 数据库名;
+mysql&gt; USE demo;
+mysql&gt; source backup.sql
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MySQL事务机制]]></title>
+    <link href="http://xiongmingcai.top/16175498124061.html"/>
+    <updated>2021-04-04T23:23:32+08:00</updated>
+    <id>http://xiongmingcai.top/16175498124061.html</id>
+    <content type="html"><![CDATA[
+<p><img src="media/16175498124061/16175499817628.jpg" alt="" /></p>
+<p>默认情况下，MySQL执行每条SQL语句都会自动开启和提交事务</p>
+<p>为了让多条SQL语句纳入到一个事务之下，可以手动管理事务</p>
+<pre><code class="language-sql">START TANSACTION;
+SQL语句
+[COMMIT|ROLLBACK];
+</code></pre>
+<ul>
+<li>COMMIT  提交</li>
+<li>ROLLBACK  回滚</li>
+</ul>
+<h2><a id="%E4%BA%8B%E5%8A%A1%E7%9A%84acid%E5%9B%9B%E7%A7%8D%E5%B1%9E%E6%80%A7" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>事务的ACID四种属性</h2>
+<p><img src="media/16175498124061/16175504411316.jpg" alt="" /></p>
+<ol>
+<li>
+<p>事务的原子性，一个事务中的所有操作要么全部完成，要么全部失败。事务执行后，不允许停留在中间某个状态。</p>
+</li>
+<li>
+<p>事务的一致性，不管在任何给定的时间、并发的事务有多少，事务必须保证运行结果的一致性。<br />
+<img src="media/16175498124061/16175502588386.jpg" alt="" /></p>
+</li>
+<li>
+<p>事务的隔离性，要求事务不受其他并发事务的影响，如同在给定的时间内，该事务是数据库唯一运行的事务。</p>
+</li>
+<li>
+<p>事务的持久性，事物一旦提交，结果便是永久性的。即使发生宕机，仍然可以依靠事务日志完成数据的持久化</p>
+</li>
+</ol>
+<p>MySQL事务案例<br />
+<img src="media/16175498124061/16175503854424.jpg" alt="" /></p>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[MySQL事务隔离]]></title>
+    <link href="http://xiongmingcai.top/16175507924168.html"/>
+    <updated>2021-04-04T23:39:52+08:00</updated>
+    <id>http://xiongmingcai.top/16175507924168.html</id>
+    <content type="html"><![CDATA[
+<p>默认情况下，MySQL是不允许事务之间相互读取临时数据的，但是可以通过设置事务的隔离级别来打破这种限制。<br />
+<img src="media/16175507924168/16175510770877.jpg" alt="" style="width:894px;" /></p>
+<p>sqlSession会话事务的四个隔离级别:</p>
+<ul>
+<li>
+<p>read uncommitted：代表一个sqlSession（ps 会话）可以读取其他sqlSession（ps 会话）事务未提交的数据（买票案例）。</p>
+</li>
+<li>
+<p>read committed：当前sqlSession只能读取另外sqlSession已提交的数据（转账案例）。</p>
+</li>
+<li>
+<p>repetable read:重复读取，设置该级别的事务只会读取事务执行之前的数据，无论其他事务是否提交，在实现上就是只读取undo日志里的数据（商品涨价案例），也是**<em>MySQL的默认事务隔离级别</em>**，什么都不写就是这个级别。</p>
+</li>
+<li>
+<p>serializable:序列化，当前会话如果设置了这个隔离级别，那么这个事务就必须等待其他事务执行完成后才能执行，也就不是并发执行了，而是逐一执行，很少使用，会让事务并发性下降。</p>
+</li>
+</ul>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Mac OS Uninstall  IntelliJ IDEA]]></title>
+    <link href="http://xiongmingcai.top/16175526439683.html"/>
+    <updated>2021-04-05T00:10:43+08:00</updated>
+    <id>http://xiongmingcai.top/16175526439683.html</id>
+    <content type="html"><![CDATA[
+<ol>
+<li>在“应用程序”目录中删除IntelliJ IDEA应用程序。</li>
+<li>删除以下目录：</li>
+</ol>
+<pre><code class="language-terminal">~/Library/Application Support/JetBrains/&lt;product&gt;&lt;version&gt;
+~/Library/Caches/JetBrains/&lt;product&gt;&lt;version&gt;
+</code></pre>
+<h2><a id="mac-os-install-intellij-idea" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>Mac OS install  IntelliJ IDEA</h2>
+<p>安装brew</p>
+<pre><code class="language-terminal"> /bin/bash -c &quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)&quot;
+</code></pre>
+<p>安装IDEA</p>
+<pre><code class="language-terminal">brew install --cask intellij-idea
+</code></pre>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Chrome 下网页滚动截屏且不用插件]]></title>
+    <link href="http://xiongmingcai.top/16175530807490.html"/>
+    <updated>2021-04-05T00:18:00+08:00</updated>
+    <id>http://xiongmingcai.top/16175530807490.html</id>
+    <content type="html"><![CDATA[
+<p>进入控制台随后，按下Command + Shift + P（Windows 为Ctrl + Shift + P），输入命令Capture full size screenshot（只输前几个字母就能找到），敲下回车，Chrome 就会自动截取整个网页内容并保存至本地</p>
+
+]]></content>
+  </entry>
+  
+</feed>
