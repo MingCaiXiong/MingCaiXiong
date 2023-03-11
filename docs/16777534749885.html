@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  Spring Boot 配置log4j2日志组件 - 精通Java编程
+  Mac brew install Minio - 精通Java编程
   
   </title>
  <meta name="description" content="网站描述">
@@ -2092,9 +2092,74 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>Spring Boot 配置log4j2日志组件</h1>
+<h1>Mac brew install Minio</h1>
 
-<p><a href="https://github.com/MingCaiXiong/spring-boot-learn/commit/7f47c5ef46cb035416bc57a4a749e62fd38db027">配置log4j2日志组件 · MingCaiXiong/spring-boot-learn@7f47c5e</a></p>
+<pre><code class="language-bash">$ brew install minio/stable/minio
+
+...省略若干...
+
+ 1. Start minio server on &quot;/home/shared&quot; directory.
+     $ minio server /home/shared
+
+  2. Start single node server with 64 local drives &quot;/mnt/data1&quot; to &quot;/mnt/data64&quot;.
+     $ minio server /mnt/data{1...64}
+
+  3. Start distributed minio server on an 32 node setup with 32 drives each, run following command on all the nodes
+     $ export MINIO_ROOT_USER=minio
+     $ export MINIO_ROOT_PASSWORD=miniostorage
+     $ minio server http://node{1...32}.example.com/mnt/export{1...32}
+
+  4. Start distributed minio server in an expanded setup, run the following command on all the nodes
+     $ export MINIO_ROOT_USER=minio
+     $ export MINIO_ROOT_PASSWORD=miniostorage
+     $ minio server http://node{1...16}.example.com/mnt/export{1...32} \
+            http://node{17...64}.example.com/mnt/export{1...64}
+
+</code></pre>
+<p>这是关于如何启动Minio Server的一些命令示例，它们分别是：</p>
+<p>在/home/shared目录下启动Minio Server。命令：</p>
+<pre><code class="language-bash">$ minio server /home/shared
+</code></pre>
+<p>在单节点服务器上启动Minio Server，并使用64个本地驱动器/mnt/data1到/mnt/data64。命令：</p>
+<pre><code class="language-bash">$minio server /mnt/data{1...64}
+</code></pre>
+<p>在32个节点的设置中启动分布式Minio Server，并在每个节点上使用32个驱动器。在所有节点上运行以下命令：</p>
+<pre><code class="language-bash">    $ export MINIO_ROOT_USER=minio，
+    $  export MINIO_ROOT_PASSWORD=miniostorage，
+    $ minio server http://node{1...16}.example.com/mnt/export{1...32} \
+         http://node{17...64}.example.com/mnt/export{1...64}
+</code></pre>
+<p>在扩展设置中启动分布式Minio Server。在所有节点上运行以下命令：</p>
+<pre><code class="language-bash">export MINIO_ROOT_USER=minio，
+export MINIO_ROOT_PASSWORD=miniostorage，
+minio server http://node{1...16}.example.com/mnt/export{1...32} \
+        http://node{17...64}.example.com/mnt/export{1...64}
+</code></pre>
+<p>这些命令中，minio server用于启动Minio Server，后面可以跟随各种参数和选项，例如指定存储路径、认证凭据、存储类型、端口等等。根据需要，可以根据这些命令示例对Minio Server进行启动和配置。</p>
+<h2><a id="%E5%90%AF%E5%8A%A8" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>启动</h2>
+<pre><code class="language-shell">minio server minio_data
+</code></pre>
+<p>output</p>
+<pre><code class="language-shell">
+WARNING: Detected default credentials 'minioadmin:minioadmin', we recommend that you change these values with 'MINIO_ROOT_USER' and 'MINIO_ROOT_PASSWORD' environment variables
+MinIO Object Storage Server
+Copyright: 2015-2023 MinIO, Inc.
+License: GNU AGPLv3 &lt;https://www.gnu.org/licenses/agpl-3.0.html&gt;
+Version: RELEASE.2023-02-27T18-10-45Z (go1.19.6 darwin/amd64)
+
+Status:         1 Online, 0 Offline.
+API: http://192.168.3.4:9000  http://127.0.0.1:9000
+RootUser: minioadmin
+RootPass: minioadmin
+Console: http://192.168.3.4:64325 http://127.0.0.1:64325
+RootUser: minioadmin
+RootPass: minioadmin
+
+Command-line: https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart
+   $ mc alias set myminio http://192.168.3.4:9000 minioadmin minioadmin
+
+Documentation: https://min.io/docs/minio/linux/index.html
+</code></pre>
 
 
 </div>
@@ -2106,15 +2171,15 @@
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="16195817611124.html"  title="Previous Post: Spring注解@Resource和@Autowired区别对比">&laquo; Spring注解@Resource和@Autowired区别对比</a>
+	        <a href="16777323266209.html"  title="Previous Post: spring boot 过滤器实现跨域控制">&laquo; spring boot 过滤器实现跨域控制</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="16196077242336.html" 
-	        title="Next Post: JAVA的异常体系">JAVA的异常体系 &raquo;</a>
+	        <a href="16777587665279.html" 
+	        title="Next Post: springboot 整合高版本8.5.2 Minio">springboot 整合高版本8.5.2 Minio &raquo;</a>
 	    
 	</div>
   </div>
@@ -2127,7 +2192,7 @@
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '16195855516226.html';
+		var currentURL = '16777534749885.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');
@@ -2173,6 +2238,8 @@
 
 
 
+
+<script src="asset/prism.js"></script>
 
 
 <style type="text/css">
