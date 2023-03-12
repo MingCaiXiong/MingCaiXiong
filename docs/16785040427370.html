@@ -101,6 +101,18 @@
           
             <li><a title="TypeORM 事务有两种方式来管理事务" href="16784364359499.html">TypeORM 事务有两种方式来管理事务</a></li>
           
+            <li><a title="常用的Express中间件helmet：提供各种安全增强功能" href="16785115739976.html">常用的Express中间件helmet：提供各种安全增强功能</a></li>
+          
+            <li><a title="常用的Express中间件cors：提供处理跨域请求功能" href="16785117494750.html">常用的Express中间件cors：提供处理跨域请求功能</a></li>
+          
+            <li><a title="常用的Express中间件compression：用于压缩 HTTP 响应" href="16785118930833.html">常用的Express中间件compression：用于压缩 HTTP 响应</a></li>
+          
+            <li><a title="常用的Express中间件multer： 上传文件" href="16785120704930.html">常用的Express中间件multer： 上传文件</a></li>
+          
+            <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
+          
+            <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+          
 
       
         <li class="divider"></li>
@@ -1160,6 +1172,18 @@
                         
                           <li><a title="TypeORM 事务有两种方式来管理事务" href="16784364359499.html">TypeORM 事务有两种方式来管理事务</a></li>
                         
+                          <li><a title="常用的Express中间件helmet：提供各种安全增强功能" href="16785115739976.html">常用的Express中间件helmet：提供各种安全增强功能</a></li>
+                        
+                          <li><a title="常用的Express中间件cors：提供处理跨域请求功能" href="16785117494750.html">常用的Express中间件cors：提供处理跨域请求功能</a></li>
+                        
+                          <li><a title="常用的Express中间件compression：用于压缩 HTTP 响应" href="16785118930833.html">常用的Express中间件compression：用于压缩 HTTP 响应</a></li>
+                        
+                          <li><a title="常用的Express中间件multer： 上传文件" href="16785120704930.html">常用的Express中间件multer： 上传文件</a></li>
+                        
+                          <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
+                        
+                          <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+                        
 
                     
                       <li class="side-title"><span>JQuery</span></li>
@@ -2161,6 +2185,51 @@ MongoDB Shell detected. Connecting to your Atlas cluster:
  --username YouDbUser # -p YouDbPassword
 </code></pre>
 <p>然后输入密码 YouDbPassword 进行身份验证。</p>
+<pre><code class="language-shell">show databases
+sample_airbnb        55.38 MiB
+sample_analytics      9.17 MiB
+sample_geospatial     1.37 MiB
+sample_guides        40.00 KiB
+sample_mflix         48.13 MiB
+sample_restaurants    7.79 MiB
+sample_supplies       1.11 MiB
+sample_training      57.20 MiB
+sample_weatherdata    2.97 MiB
+admin               336.00 KiB
+local                11.03 GiB
+</code></pre>
+<p>这些都是 MongoDB 官方提供的样例数据集，您可以在 Atlas 上免费使用这些数据集来练习和学习 MongoDB 的使用。</p>
+<ul>
+<li>sample_airbnb: 包含了 AirBnB 数据，您可以通过这个数据集进行数据建模和分析，以更好地理解 MongoDB 的特点和优势。</li>
+<li>sample_analytics: 包含了有关运营和管理方面的数据，例如收入、产品和客户数据等。这个数据集可以帮助您研究 MongoDB 的分析和聚合功能。</li>
+<li>sample_geospatial: 包含了有关地理空间数据的信息，例如地图和地标等。这个数据集可以帮助您了解 MongoDB 的地理空间查询功能。</li>
+<li>sample_guides: 包含了 MongoDB 的教程和指南，供您学习 MongoDB 的基础知识和最佳实践。</li>
+<li>sample_mflix: 包含了一个虚构的电影数据库，包括电影、演员和评论等信息。这个数据集可以帮助您练习 MongoDB 的 CRUD 操作和查询语句。</li>
+<li>sample_restaurants: 包含了一些餐厅的数据，例如菜单、评价和位置等。这个数据集可以帮助您研究 MongoDB 的文本搜索和地理空间功能。</li>
+<li>sample_supplies: 包含了有关供应链的数据，例如采购订单、供应商和发票等。这个数据集可以帮助您了解 MongoDB 的文档设计和嵌入式数据建模。</li>
+<li>sample_training: 包含了一些关于在线培训的数据，例如学生、课程和讲师等信息。这个数据集可以帮助您练习 MongoDB 的聚合管道和数据建模技巧。</li>
+<li>sample_weatherdata: 包含了有关天气的数据，例如气温、降水和风速等。这个数据集可以帮助您了解 MongoDB 的时间序列查询和聚合功能。</li>
+</ul>
+<h2><a id="%E5%A6%82%E4%BD%95%E5%AF%B9%E8%BF%99%E4%BA%9B%E5%BA%93%E5%A4%87%E4%BB%BD%E8%BF%98%E5%8E%9F" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>如何对这些库备份还原</h2>
+<pre><code class="language-sh">mongodump --uri &quot;mongodb+srv://&lt;username&gt;:&lt;password&gt;@cluster0.mongodb.net&quot; --gzip --archive=&lt;backup_file_name&gt;.gz
+
+</code></pre>
+<p>具体来说，它使用了 mongodump 工具，该工具允许您将 MongoDB 数据库备份到一个压缩的存档文件中。这个命令指定了以下参数：</p>
+<ul>
+<li>--uri：指定要备份的 MongoDB 服务器的 URI，它指定了登录凭据和要备份的数据库。</li>
+<li>--gzip：指定要对备份数据进行 gzip 压缩，以减小备份文件的大小。</li>
+<li>--archive：指定要输出的备份文件名及其路径。</li>
+</ul>
+<p>如果您只想备份特定的数据库，可以使用 -d 选项指定要备份的数据库名称。例如，备份 sample_mflix 库的命令示例</p>
+<pre><code class="language-sh">mongodump --uri &quot;mongodb+srv://&lt;username&gt;:&lt;password&gt;@cluster0.mongodb.net&quot; --gzip --archive=&lt;backup_file_name&gt;.gz -d sample_mflix
+</code></pre>
+<p>此命令将备份 sample_mflix 库并将其压缩到一个gzip存档文件中。</p>
+<pre><code class="language-sh">mongorestore --uri &lt;connection_string&gt; --gzip --archive=&lt;backup_file&gt;
+</code></pre>
+<p>其中，&lt;connection_string&gt;是您的 MongoDB 实例的连接字符串，&lt;backup_file&gt;是您之前使用mongodump备份数据集时指定的备份文件名。</p>
+<blockquote>
+<p>在MongoDB 4.4及以前的版本中，mongodump、mongorestore等工具是作为MongoDB的一部分进行打包和分发的。从MongoDB 5.0版本开始，这些工具被移动到名为MongoDB Database Tools的单独软件包中，这个软件包可以从MongoDB官网下载并安装。因此，从MongoDB 5.0版本开始，要使用mongodump命令需要先安装MongoDB Database Tools软件包。</p>
+</blockquote>
 
 
 </div>
@@ -2179,6 +2248,9 @@ MongoDB Shell detected. Connecting to your Atlas cluster:
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
+	        <a href="16785115739976.html" 
+	        title="Next Post: 常用的Express中间件helmet：提供各种安全增强功能">常用的Express中间件helmet：提供各种安全增强功能 &raquo;</a>
+	    
 	</div>
   </div>
 </div>
