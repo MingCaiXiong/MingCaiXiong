@@ -117,6 +117,16 @@
           
             <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
           
+            <li><a title="express-session + Redis做会话管理" href="16786287095523.html">express-session + Redis做会话管理</a></li>
+          
+            <li><a title="基于 Redis 的分布式锁(解决分布式商品超卖问题)" href="16786874057444.html">基于 Redis 的分布式锁(解决分布式商品超卖问题)</a></li>
+          
+            <li><a title="避免出现竞态条件和数据不一致的情况举例说明" href="16786876558774.html">避免出现竞态条件和数据不一致的情况举例说明</a></li>
+          
+            <li><a title="joi: 用于验证请求数据的库" href="16786958365541.html">joi: 用于验证请求数据的库</a></li>
+          
+            <li><a title="Node.js 处理任务调(定时任务)" href="16786962630281.html">Node.js 处理任务调(定时任务)</a></li>
+          
 
       
         <li class="divider"></li>
@@ -1192,6 +1202,16 @@
                         
                           <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
                         
+                          <li><a title="express-session + Redis做会话管理" href="16786287095523.html">express-session + Redis做会话管理</a></li>
+                        
+                          <li><a title="基于 Redis 的分布式锁(解决分布式商品超卖问题)" href="16786874057444.html">基于 Redis 的分布式锁(解决分布式商品超卖问题)</a></li>
+                        
+                          <li><a title="避免出现竞态条件和数据不一致的情况举例说明" href="16786876558774.html">避免出现竞态条件和数据不一致的情况举例说明</a></li>
+                        
+                          <li><a title="joi: 用于验证请求数据的库" href="16786958365541.html">joi: 用于验证请求数据的库</a></li>
+                        
+                          <li><a title="Node.js 处理任务调(定时任务)" href="16786962630281.html">Node.js 处理任务调(定时任务)</a></li>
+                        
 
                     
                       <li class="side-title"><span>JQuery</span></li>
@@ -2139,6 +2159,35 @@
 <li>环境变量管理：PM2 支持在启动应用程序时设置环境变量，以便根据不同的环境（例如开发、测试、生产）使用不同的配置。</li>
 <li>API 接口：PM2 提供了一个 API 接口，可以方便地与其他工具或系统进行集成，并且可以通过 REST API 进行访问。</li>
 </ul>
+<h2><a id="%E5%B8%B8%E7%94%A8%E7%9A%84pm2%E9%AB%98%E7%BA%A7%E5%91%BD%E4%BB%A4" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>常用的 PM2 高级命令</h2>
+<ol>
+<li>pm2 logs：查看所有应用程序的日志</li>
+<li>pm2 monit：以监视模式启动一个 web UI，查看 CPU、内存、网络等性能指标</li>
+<li>pm2 list：查看当前所有正在运行的应用程序列表</li>
+<li>pm2 show <app-name>：查看指定应用程序的详细信息</li>
+<li>pm2 restart <app-name>：重启指定应用程序</li>
+<li>pm2 reload <app-name>：优雅地重新加载指定应用程序，不会中断服务</li>
+<li>pm2 stop <app-name>：停止指定应用程序</li>
+<li>pm2 delete <app-name>：删除指定应用程序</li>
+<li>pm2 startup：在系统启动时自动启动 PM2，以及配置开机启动的脚本</li>
+<li>pm2 save：保存当前应用程序列表，以便下次重启后自动加载</li>
+<li>pm2 resurrect：重新启动所有已保存的应用程序</li>
+<li>pm2 flush：清空所有日志文件</li>
+</ol>
+<h2><a id="%E4%BD%BF%E7%94%A8pm2%E6%9D%A5%E5%AE%9E%E7%8E%B0%E6%B0%B4%E5%B9%B3%E6%89%A9%E5%B1%95%E5%92%8C%E5%A4%9A%E5%AE%9E%E4%BE%8B%E9%83%A8%E7%BD%B2" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用 PM2 来实现水平扩展和多实例部署</h2>
+<p>要在 PM2 中启动多个实例，请使用以下命令：</p>
+<pre><code class="language-shell">pm2 start app.js -i &lt;number_of_instances&gt;
+</code></pre>
+<p>其中 &lt;number_of_instances&gt; 表示要启动的实例数。例如，要启动 4 个实例，请使用以下命令：</p>
+<pre><code class="language-shell">pm2 start app.js -i 4
+</code></pre>
+<p>这将在 4 个不同的进程中启动应用程序，并在这些进程之间分配请求。如果您的服务器有多个 CPU 核心，每个核心都可以运行一个实例，从而实现更好的性能和吞吐量。</p>
+<p>需要注意的是，如果您的应用程序使用了共享资源，例如数据库连接或文件系统句柄，您可能需要使用专门的库或技术来确保多个进程之间的同步和协调，以避免出现竞态条件和数据不一致的情况。</p>
+<h2><a id="%E7%A1%AE%E4%BF%9D%E5%A4%9A%E4%B8%AA%E8%BF%9B%E7%A8%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E5%90%8C%E6%AD%A5%E5%92%8C%E5%8D%8F%E8%B0%83%E6%AF%94%E5%A6%82%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BA%8B%E5%8A%A1%E5%A6%82%E4%BD%95%E5%8D%8F%E8%B0%83" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>确保多个进程之间的同步和协调 , 比如数据库事务如何协调</h2>
+<p>使用 pm2 的进程集群模式时，确实需要考虑多个进程之间的同步和协调问题。例如，在处理数据库事务时，如果多个进程同时对同一个数据进行操作，可能会导致数据不一致或者出现竞态条件。</p>
+<p>为了解决这个问题，可以使用分布式锁或者乐观锁等技术来保证数据的一致性。在分布式锁中，多个进程尝试获取同一个锁，只有一个进程能够获取成功，其他进程需要等待。在乐观锁中，每个进程都会在执行操作前获取数据的版本号或者时间戳等信息，操作完成后再进行比较和更新。</p>
+<p>除此之外，还可以考虑使用消息队列来协调多个进程之间的操作。例如，在处理订单支付时，可以将支付请求放入消息队列中，让多个进程竞争处理。这样可以有效地分摊负载，并且避免多个进程同时对同一个订单进行操作。</p>
+<p>总之，要保证多进程应用程序的数据一致性和正确性，需要综合考虑多个方面，包括锁、乐观锁、消息队列等技术，具体方案需要根据具体业务场景进行设计和选择。</p>
 
 
 </div>
@@ -2217,6 +2266,8 @@
 
 
 
+
+<script src="asset/prism.js"></script>
 
 
 <style type="text/css">
