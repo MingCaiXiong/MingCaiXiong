@@ -85,6 +85,8 @@
           
             <li><a title="TypeORM 查询数据方式有几种" href="16784075287754.html">TypeORM 查询数据方式有几种</a></li>
           
+            <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
+          
             <li><a title="TypeORM 有哪些常用注解" href="16784084071723.html">TypeORM 有哪些常用注解</a></li>
           
             <li><a title="TypeORM  有哪几种修改数据的方式" href="16784088826402.html">TypeORM  有哪几种修改数据的方式</a></li>
@@ -112,6 +114,8 @@
             <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
           
             <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+          
+            <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
           
 
       
@@ -336,6 +340,8 @@
             <li><a title="七牛URLencode 和 Java 标准库URLEncoder区别" href="16778011669008.html">七牛URLencode 和 Java 标准库URLEncoder区别</a></li>
           
             <li><a title="要将Minio绑定到域名上，需要进行以下几个步骤" href="16781021181591.html">要将Minio绑定到域名上，需要进行以下几个步骤</a></li>
+          
+            <li><a title="MinIO 对象生命周期管理" href="16786012571682.html">MinIO 对象生命周期管理</a></li>
           
 
       
@@ -592,8 +598,6 @@
             <li><a title="spring boot 拦截器和过滤器有什么区别" href="16777185497734.html">spring boot 拦截器和过滤器有什么区别</a></li>
           
             <li><a title="express 常用依赖包" href="16784079537262.html">express 常用依赖包</a></li>
-          
-            <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
           
 
       
@@ -1156,6 +1160,8 @@
                         
                           <li><a title="TypeORM 查询数据方式有几种" href="16784075287754.html">TypeORM 查询数据方式有几种</a></li>
                         
+                          <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
+                        
                           <li><a title="TypeORM 有哪些常用注解" href="16784084071723.html">TypeORM 有哪些常用注解</a></li>
                         
                           <li><a title="TypeORM  有哪几种修改数据的方式" href="16784088826402.html">TypeORM  有哪几种修改数据的方式</a></li>
@@ -1183,6 +1189,8 @@
                           <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
                         
                           <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+                        
+                          <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
                         
 
                     
@@ -1393,6 +1401,8 @@
                           <li><a title="七牛URLencode 和 Java 标准库URLEncoder区别" href="16778011669008.html">七牛URLencode 和 Java 标准库URLEncoder区别</a></li>
                         
                           <li><a title="要将Minio绑定到域名上，需要进行以下几个步骤" href="16781021181591.html">要将Minio绑定到域名上，需要进行以下几个步骤</a></li>
+                        
+                          <li><a title="MinIO 对象生命周期管理" href="16786012571682.html">MinIO 对象生命周期管理</a></li>
                         
 
                     
@@ -1635,8 +1645,6 @@
                           <li><a title="spring boot 拦截器和过滤器有什么区别" href="16777185497734.html">spring boot 拦截器和过滤器有什么区别</a></li>
                         
                           <li><a title="express 常用依赖包" href="16784079537262.html">express 常用依赖包</a></li>
-                        
-                          <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
                         
 
                     
@@ -2188,6 +2196,57 @@ Command-line: https://min.io/docs/minio/linux/reference/minio-mc.html#quickstart
 
 Documentation: https://min.io/docs/minio/linux/index.html
 </code></pre>
+<h2><a id="mac-minio-client-install" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>Mac MinIO Client install</h2>
+<pre><code class="language-shell"> brew install minio/stable/mc
+</code></pre>
+<p>验证 mc 命令是否安装成功：</p>
+<pre><code class="language-shell">mc --version
+
+mc version RELEASE.2023-02-28T00-12-59Z (commit-id=5fbe8c26bab5592f0bc521db00665f8670a0fb31)
+Runtime: go1.19.6 darwin/amd64
+Copyright (c) 2015-2023 MinIO, Inc.
+License GNU AGPLv3 &lt;https://www.gnu.org/licenses/agpl-3.0.html&gt;
+(base)
+</code></pre>
+<p>需要注意的是，如果你是在已经安装了 MinIO Server 的机器上安装 mc 命令，则需要指定正确的 MinIO Server 地址和凭证信息。可以通过 mc config 命令进行配置。例如</p>
+<pre><code class="language-shell">mc config host add s3 http://localhost:9000 accesskey secretkey
+</code></pre>
+<p>其中，s3 是 MinIO Server 的别名，<a href="http://localhost:9000">http://localhost:9000</a> 是 MinIO Server 的地址，accesskey 和 secretkey 分别是 MinIO Server 的访问密钥和秘钥。配置完成后，就可以使用 mc 命令与 MinIO Server 进行交互了。</p>
+<p>使用入门</p>
+<pre><code class="language-shell"> mc ls -r s3 # s3 是 MinIO Server 的别名
+[2023-03-12 10:34:18 CST] 456KiB STANDARD image/IMG_1372.JPG
+[2023-03-11 17:53:07 CST] 6.1KiB STANDARD image/all.sql
+[2023-03-11 21:48:01 CST]   158B STANDARD image/中文文件名  测试123.json
+[2023-03-03 13:52:35 CST]  61KiB STANDARD wiki/demo.zip
+[2023-03-03 14:01:29 CST]  17KiB STANDARD wiki/install-omz.sh
+[2023-03-11 17:00:46 CST]   186B STANDARD wiki/up-users.json
+[2023-03-11 14:05:59 CST]   158B STANDARD wiki/中文文件名  测试123.json
+
+</code></pre>
+<h2><a id="%E9%AB%98%E7%BA%A7%E5%8A%9F%E8%83%BD%E7%9A%84%E7%A4%BA%E4%BE%8B" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>高级功能的示例</h2>
+<p>通过管道传输数据：可以使用管道命令将数据从一个mc主机传输到另一个mc主机，<br />
+例如：</p>
+<pre><code class="language-shell">mc pipe s3/bucket-name/remote-file | mc pipe - s3/other-bucket/remote-file
+</code></pre>
+<p>这将从s3/bucket-name/remote-file读取数据，并将其传输到s3/other-bucket/remote-file。</p>
+<span id="more"></span><!-- more -->
+<!--  -->
+<h3><a id="%E5%90%8C%E6%AD%A5%E6%95%B0%E6%8D%AE%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>同步数据：</h3>
+<p>使用mc，可以轻松地将数据从一个地方同步到另一个地方。<br />
+例如：</p>
+<pre><code class="language-plain_text">mc mirror /path/to/local/folder s3/bucket-name/folder
+</code></pre>
+<p>这将将本地文件夹/path/to/local/folder同步到s3/bucket-name/folder中。</p>
+<h3><a id="%E6%A3%80%E6%9F%A5%E5%AD%98%E5%82%A8%E6%A1%B6%E5%92%8C%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%85%83%E6%95%B0%E6%8D%AE%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>检查存储桶和对象的元数据：</h3>
+<p>使用mc，可以查看存储桶和对象的元数据。</p>
+<pre><code class="language-plain_text"># 对象的元数据
+mc stat s3/bucket-name/remote-file
+</code></pre>
+<h3><a id="%E8%AE%BE%E7%BD%AE%E5%AD%98%E5%82%A8%E6%A1%B6%E7%AD%96%E7%95%A5%EF%BC%9A" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>设置存储桶策略：</h3>
+<p>使用mc，可以设置存储桶的策略。例如：</p>
+<pre><code class="language-bash">mc policy set download s3/bucket-name
+</code></pre>
+<p>这将设置存储桶s3/bucket-name的下载策略。</p>
 
 
 </div>

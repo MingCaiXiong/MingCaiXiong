@@ -85,6 +85,8 @@
           
             <li><a title="TypeORM 查询数据方式有几种" href="16784075287754.html">TypeORM 查询数据方式有几种</a></li>
           
+            <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
+          
             <li><a title="TypeORM 有哪些常用注解" href="16784084071723.html">TypeORM 有哪些常用注解</a></li>
           
             <li><a title="TypeORM  有哪几种修改数据的方式" href="16784088826402.html">TypeORM  有哪几种修改数据的方式</a></li>
@@ -112,6 +114,8 @@
             <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
           
             <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+          
+            <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
           
 
       
@@ -336,6 +340,8 @@
             <li><a title="七牛URLencode 和 Java 标准库URLEncoder区别" href="16778011669008.html">七牛URLencode 和 Java 标准库URLEncoder区别</a></li>
           
             <li><a title="要将Minio绑定到域名上，需要进行以下几个步骤" href="16781021181591.html">要将Minio绑定到域名上，需要进行以下几个步骤</a></li>
+          
+            <li><a title="MinIO 对象生命周期管理" href="16786012571682.html">MinIO 对象生命周期管理</a></li>
           
 
       
@@ -592,8 +598,6 @@
             <li><a title="spring boot 拦截器和过滤器有什么区别" href="16777185497734.html">spring boot 拦截器和过滤器有什么区别</a></li>
           
             <li><a title="express 常用依赖包" href="16784079537262.html">express 常用依赖包</a></li>
-          
-            <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
           
 
       
@@ -1156,6 +1160,8 @@
                         
                           <li><a title="TypeORM 查询数据方式有几种" href="16784075287754.html">TypeORM 查询数据方式有几种</a></li>
                         
+                          <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
+                        
                           <li><a title="TypeORM 有哪些常用注解" href="16784084071723.html">TypeORM 有哪些常用注解</a></li>
                         
                           <li><a title="TypeORM  有哪几种修改数据的方式" href="16784088826402.html">TypeORM  有哪几种修改数据的方式</a></li>
@@ -1183,6 +1189,8 @@
                           <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
                         
                           <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+                        
+                          <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
                         
 
                     
@@ -1393,6 +1401,8 @@
                           <li><a title="七牛URLencode 和 Java 标准库URLEncoder区别" href="16778011669008.html">七牛URLencode 和 Java 标准库URLEncoder区别</a></li>
                         
                           <li><a title="要将Minio绑定到域名上，需要进行以下几个步骤" href="16781021181591.html">要将Minio绑定到域名上，需要进行以下几个步骤</a></li>
+                        
+                          <li><a title="MinIO 对象生命周期管理" href="16786012571682.html">MinIO 对象生命周期管理</a></li>
                         
 
                     
@@ -1635,8 +1645,6 @@
                           <li><a title="spring boot 拦截器和过滤器有什么区别" href="16777185497734.html">spring boot 拦截器和过滤器有什么区别</a></li>
                         
                           <li><a title="express 常用依赖包" href="16784079537262.html">express 常用依赖包</a></li>
-                        
-                          <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
                         
 
                     
@@ -2125,32 +2133,115 @@
 <p>jsonwebtoken 是 Node.js 的一个库，用于生成和验证 JSON Web Token（JWT）。JWT 是一种安全的令牌，通常用于身份验证和授权。</p>
 <pre><code class="language-ts">const jwt = require('jsonwebtoken');
 
-// 创建 JWT
-const payload = { id: 123 };
-const secret = 'mysecretkey';
-const options = { expiresIn: '1h' };
-const token = jwt.sign(payload, secret, options);
+// 生成 JWT
+const payload = { userId: 123 };
+const secret = 'my-secret-key';
+const token = jwt.sign(payload, secret, { expiresIn: '1h' });
+console.log(token);
 
-console.log(token); // 打印生成的 JWT
-
+// 验证 JWT
+try {
+    const decoded = jwt.verify(token, secret);
+    console.log(decoded);
+} catch (err) {
+    console.log(err);
+}
 
 </code></pre>
-<p>在上面的示例中，首先创建了一个 JWT，使用 jwt.sign() 方法，需要传入三个参数：负载（即要编码的数据），密钥和选项（可选）。选项对象包含一个 expiresIn 属性，表示 JWT 的有效期。jwt.sign() 方法将返回生成的 JWT。</p>
-<pre><code class="language-ts">
-// 验证 JWT
-jwt.verify(token, secret, (err, decoded) =&gt; {
+<p>在上面的示例中，首先创建了一个 JWT，使用 jwt.sign() 方法，需要传入三个参数：负载（即要编码的数据），密钥和选项（可选）。选项对象包含一个 expiresIn 属性，表示 JWT 的有效期。jwt.sign() 方法将返回生成的 JWT。<br />
+output</p>
+<pre><code class="language-plain_text">eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEyMywiaWF0IjoxNjc4NjE0OTEwLCJleHAiOjE2Nzg2MTg1MTB9.Mp3U7u_w8qoIPMGnlKX-r89xOevvvshQ8ZJTme84okY
+{ userId: 123, iat: 1678614910, exp: 1678618510 }
+
+</code></pre>
+<p>这是一个 JSON Web Token (JWT) 的示例，它包含了以下三个字段：</p>
+<ul>
+<li>userId：这个字段是我们自己定义的，用于存储用户的唯一标识，这里的值是 123。</li>
+<li>iat：这个字段表示 JWT 的签发时间，是一个 Unix 时间戳，这里的值是 1678614910，表示签发时间为 2023 年 3 月 11 日 11:41:50。</li>
+<li>exp：这个字段表示 JWT 的过期时间，也是一个 Unix 时间戳，这里的值是 1678618510，表示过期时间为签发时间后的一个小时，即 2023 年 3 月 11 日 12:41:50。</li>
+</ul>
+<h2><a id="%E6%95%B4%E5%90%88express" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>整合express</h2>
+<pre><code class="language-ts">const jwt = require('jsonwebtoken');
+const express = require('express');
+const app = express();
+const hostname = '127.0.0.1';
+const secret = 'my-secret-key';
+const port = 3000;
+
+// 在登录成功后生成 JWT
+app.post('/login', (req, res) =&gt; {
+    const user = { id: 1, username: 'my-username' };
+    const token = jwt.sign(user, secret, { expiresIn: '1h' });
+    res.send({ token });
+});
+
+// 在后续请求中验证 JWT 并解码出用户信息
+app.use(function (req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send('未提供 JWT');
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, secret);
+        const user = { id: decoded.id, username: decoded.username };
+        req.user = user; // 存储用户信息到 req 对象
+    } catch (err) {
+        return res.status(403).send('JWT 无效或已过期');
+    }
+    next();
+});
+
+// 后续路由就可以取用户信息
+app.get('/user', function (req, res) {
+    const user = req.user;
+    res.send(`当前登录用户信息： ${JSON.stringify(user)}`);
+});
+
+// 启动应用程序
+app.listen(port, hostname, () =&gt; {
+    console.log(`Server running at http://``{hostname}:``{port}/`);
+});
+
+</code></pre>
+<p>我们通过中间件对 JWT 进行验证，并从 JWT 解码出用户信息，将其存储在 req 对象中以供后续路由使用。在 /user 路由中，我们可以通过 req.user 获取当前登录用户的信息，并将其返回给客户端。</p>
+<h3><a id="postman%E5%BF%AB%E6%8D%B7%E6%B5%8B%E8%AF%95" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>postman 快捷测试</h3>
+<p>点击 Pre-request Scripts 按钮，并在弹出的编辑器中输入以下脚本：</p>
+<pre><code class="language-ts">// 发送登录请求
+pm.sendRequest({
+  url: 'http://127.0.0.1:3000/login',
+  method: 'POST',
+  body: {
+    mode: 'urlencoded',
+    urlencoded: [
+      { key: 'username', value: 'myusername', disabled: false },
+      { key: 'password', value: 'mypassword', disabled: false }
+    ]
+  }
+}, function (err, res) {
+  // 获取 JWT Token 并设置 Authorization 请求头
   if (err) {
-    console.log('JWT 验证失败:', err);
+    console.log(err);
   } else {
-    console.log('JWT 验证成功:', decoded);
+    const token = res.json().token;
+    pm.request.headers.upsert({ key: 'Authorization', value: `Bearer ${token}` });
   }
 });
+
 </code></pre>
-<p>然后，使用 jwt.verify() 方法验证 JWT。此方法需要三个参数：JWT、密钥和回调函数。回调函数有两个参数：如果验证失败，则 err 参数将包含一个错误对象；否则，decoded 参数将包含解码的 JWT 数据。</p>
-<p>JSON Web Token (JWT) 是一种在网络上安全地传递信息的方式。它由三个部分组成：头部、载荷和签名。</p>
+<p>该脚本将发送一个 POST 请求到登录接口，使用 username 和 password 作为请求体参数。在请求成功后，从响应中获取 JWT Token 并将其设置为 Authorization 请求头的一部分。</p>
+<p><img src="media/16784083121172/16786156670467.jpg" alt="" /></p>
+<p>发送请求，Pre-request Scripts 将会在发送请求之前执行，发送登录请求并设置 JWT Token 到 Authorization 请求头中，然后发送实际的请求并获取响应。</p>
 <h2><a id="json-web-token%EF%BC%88jwt%EF%BC%89%E7%9A%84%E4%BD%9C%E7%94%A8" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>JSON Web Token（JWT） 的作用</h2>
 <p>JWT 可以用于在客户端和服务器之间传递认证信息和声明。通常情况下，当用户通过身份验证后，服务器会颁发一个 JWT 给客户端。客户端在之后的每个请求中都会携带这个 JWT，以便服务器能够验证该请求的有效性。JWT 的载荷可以包含一些有关用户身份的声明信息，例如用户 ID、用户名、角色等，服务器可以基于这些信息做出一些授权决策。</p>
 <p>JWT 的一个重要特点是，它不需要在服务器端存储会话信息。这使得 JWT 适用于分布式应用程序或服务之间的通信，因为每个服务都可以独立验证 JWT，而无需访问其他服务的会话信息。同时，由于 JWT 是基于加密技术实现的，因此它可以确保传输的数据是安全和私密的。</p>
+<h2><a id="%E4%BD%BF%E7%94%A8jwt%E4%BC%9A%E8%AF%9D%E4%BF%9D%E5%AD%98%E7%9A%84%E7%BC%BA%E7%82%B9" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用JWT 会话保存的缺点</h2>
+<ul>
+<li>需要进行手动处理：在验证 JWT 的真实性时，需要手动解密 JWT 并验证签名，这需要一定的编程技能和经验。如果处理不当，可能会导致安全漏洞。</li>
+<li>存在跨站点脚本攻击（XSS）风险：JWT 在客户端存储，并且需要通过 JavaScript 代码来发送到服务器端，这意味着攻击者可以通过注入恶意脚本来获取用户的 JWT，并在未经授权的情况下访问用户的账户。</li>
+<li>无法撤销：一旦 JWT 签发后，就无法撤销或取消，除非等到 JWT 过期。如果 JWT 存在安全漏洞，攻击者可以利用 JWT 访问用户的账户，而服务器端无法立即采取措施来防止这种攻击。</li>
+<li>信息量过大：JWT 在携带信息时，需要将所有信息都编码在 JWT 中，这会导致 JWT 的长度变得很长，增加了网络传输的负载和存储的成本。</li>
+</ul>
 
 
 </div>
@@ -2215,6 +2306,9 @@ jwt.verify(token, secret, (err, decoded) =&gt; {
 
 
 
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script type="text/x-mathjax-config">MathJax.Hub.Config({TeX: { equationNumbers: { autoNumber: "AMS" } }});</script>
 
   
 

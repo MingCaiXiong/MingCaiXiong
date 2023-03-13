@@ -85,6 +85,8 @@
           
             <li><a title="TypeORM 查询数据方式有几种" href="16784075287754.html">TypeORM 查询数据方式有几种</a></li>
           
+            <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
+          
             <li><a title="TypeORM 有哪些常用注解" href="16784084071723.html">TypeORM 有哪些常用注解</a></li>
           
             <li><a title="TypeORM  有哪几种修改数据的方式" href="16784088826402.html">TypeORM  有哪几种修改数据的方式</a></li>
@@ -112,6 +114,8 @@
             <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
           
             <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+          
+            <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
           
 
       
@@ -336,6 +340,8 @@
             <li><a title="七牛URLencode 和 Java 标准库URLEncoder区别" href="16778011669008.html">七牛URLencode 和 Java 标准库URLEncoder区别</a></li>
           
             <li><a title="要将Minio绑定到域名上，需要进行以下几个步骤" href="16781021181591.html">要将Minio绑定到域名上，需要进行以下几个步骤</a></li>
+          
+            <li><a title="MinIO 对象生命周期管理" href="16786012571682.html">MinIO 对象生命周期管理</a></li>
           
 
       
@@ -592,8 +598,6 @@
             <li><a title="spring boot 拦截器和过滤器有什么区别" href="16777185497734.html">spring boot 拦截器和过滤器有什么区别</a></li>
           
             <li><a title="express 常用依赖包" href="16784079537262.html">express 常用依赖包</a></li>
-          
-            <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
           
 
       
@@ -1156,6 +1160,8 @@
                         
                           <li><a title="TypeORM 查询数据方式有几种" href="16784075287754.html">TypeORM 查询数据方式有几种</a></li>
                         
+                          <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
+                        
                           <li><a title="TypeORM 有哪些常用注解" href="16784084071723.html">TypeORM 有哪些常用注解</a></li>
                         
                           <li><a title="TypeORM  有哪几种修改数据的方式" href="16784088826402.html">TypeORM  有哪几种修改数据的方式</a></li>
@@ -1183,6 +1189,8 @@
                           <li><a title="Nodejs 文件上传minio" href="16785876624457.html">Nodejs 文件上传minio</a></li>
                         
                           <li><a title="Nodejs 文件上传七牛(qiniu)" href="16785888926120.html">Nodejs 文件上传七牛(qiniu)</a></li>
+                        
+                          <li><a title="Node.js 进程管理工具" href="16785983702856.html">Node.js 进程管理工具</a></li>
                         
 
                     
@@ -1393,6 +1401,8 @@
                           <li><a title="七牛URLencode 和 Java 标准库URLEncoder区别" href="16778011669008.html">七牛URLencode 和 Java 标准库URLEncoder区别</a></li>
                         
                           <li><a title="要将Minio绑定到域名上，需要进行以下几个步骤" href="16781021181591.html">要将Minio绑定到域名上，需要进行以下几个步骤</a></li>
+                        
+                          <li><a title="MinIO 对象生命周期管理" href="16786012571682.html">MinIO 对象生命周期管理</a></li>
                         
 
                     
@@ -1635,8 +1645,6 @@
                           <li><a title="spring boot 拦截器和过滤器有什么区别" href="16777185497734.html">spring boot 拦截器和过滤器有什么区别</a></li>
                         
                           <li><a title="express 常用依赖包" href="16784079537262.html">express 常用依赖包</a></li>
-                        
-                          <li><a title="常用依赖包 jsonwebtoken （JWT）" href="16784083121172.html">常用依赖包 jsonwebtoken （JWT）</a></li>
                         
 
                     
@@ -2216,6 +2224,31 @@ $ qshell urldecode %E4%B8%AD%E6%96%87%E6%96%87%E4%BB%B6%E5%90%8D%20%20%E6%B5%8B%
 中文文件名  测试123.json
 
 </code></pre>
+<h3><a id="%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E5%A4%A7%E5%B0%8F%E9%99%90%E5%88%B6" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>配置文件大小限制</h3>
+<pre><code class="language-ts">const multer = require('multer');
+
+const upload = multer({
+  limits: {
+    fileSize: 1024 * 1024 * 5, // 限制文件大小为 5MB
+  },
+});
+
+</code></pre>
+<h3><a id="%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%B1%BB%E5%9E%8B%E9%99%90%E5%88%B6" class="anchor" aria-hidden="true"><span class="octicon octicon-link"></span></a>配置文件类型限制</h3>
+<pre><code class="language-ts">const multer = require('multer');
+
+const upload = multer({
+  fileFilter: function(req, file, cb) {
+    // 只允许上传 jpg, jpeg, png 和 gif 格式的图片
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+      return cb(new Error('只允许上传 jpg, jpeg, png 和 gif 格式的图片！'), false);
+    }
+    cb(null, true);
+  },
+});
+
+</code></pre>
+<p>在上面的示例代码中，fileFilter 函数中对上传的文件进行格式匹配，如果不符合要求则返回一个错误。如果文件符合要求，则调用 cb 函数来继续处理上传。注意，如果没有通过 cb 函数调用来处理上传，上传的文件将会被丢弃。</p>
 <blockquote>
 <p>注意: postman测回中文乱码得常用curl 方式</p>
 </blockquote>
