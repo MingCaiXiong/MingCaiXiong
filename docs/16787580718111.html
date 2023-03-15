@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
     
-  如何避免死锁 - 精通Java编程
+  Prism.js是一个轻量级的语法高亮库， - 精通Java编程
   
   </title>
  <meta name="description" content="网站描述">
@@ -2276,9 +2276,42 @@
             <div class="large-9 medium-9 columns">
 
  <div class="markdown-body">
-<h1>如何避免死锁</h1>
+<h1>Prism.js是一个轻量级的语法高亮库，</h1>
 
-<p><img src="media/16466484941914/16466485380942.jpg" alt="" style="width:1076px;" /></p>
+<p>支持多种编程语言和代码主题，在前端开发中较为常用。下面是使用示例：</p>
+<ol>
+<li>引入prism.js和相应的主题css文件和对应的语言插件：</li>
+</ol>
+<pre><code class="language-html">&lt;link href=&quot;path/to/prism.css&quot; rel=&quot;stylesheet&quot; /&gt;
+&lt;script src=&quot;path/to/prism.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;path/to/prism-language1.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;path/to/prism-language2.js&quot;&gt;&lt;/script&gt;
+...
+</code></pre>
+<ol start="2">
+<li>添加需要高亮的代码块：</li>
+</ol>
+<pre><code class="language-html">&lt;pre&gt;&lt;code class=&quot;language-html&quot;&gt; &lt;!-- 添加语言类型 --&gt;
+&amp;lt;!doctype html&amp;gt;
+&amp;lt;html&amp;gt;
+  &amp;lt;head&amp;gt;
+    &amp;lt;title&amp;gt;Page Title&amp;lt;/title&amp;gt;
+  &amp;lt;/head&amp;gt;
+  &amp;lt;body&amp;gt;
+
+    &amp;lt;h1&amp;gt;This is a Heading&amp;lt;/h1&amp;gt;
+    &amp;lt;p&amp;gt;This is a paragraph.&amp;lt;/p&amp;gt;
+
+  &amp;lt;/body&amp;gt;
+&amp;lt;/html&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+<ol start="3">
+<li>初始化 Prism：</li>
+</ol>
+<pre><code class="language-javascript">Prism.highlightAll(); // 自动高亮所有代码块
+</code></pre>
+<p>以上是 Prism.js 的简单使用示例，你可以根据需求自定义语言和主题。</p>
 
 
 </div>
@@ -2290,16 +2323,13 @@
   <div class="large-6 columns">
 	<div class="text-left" style="padding:15px 0px;">
 		
-	        <a href="16465738828407.html"  title="Previous Post: 原子性-synchronized">&laquo; 原子性-synchronized</a>
+	        <a href="16786962630281.html"  title="Previous Post: Node.js 处理任务调(定时任务)">&laquo; Node.js 处理任务调(定时任务)</a>
 	    
 	</div>
   </div>
   <div class="large-6 columns">
 	<div class="text-right" style="padding:15px 0px;">
 		
-	        <a href="16466487602408.html" 
-	        title="Next Post: Spring Boot和Spring Cloud的关系？">Spring Boot和Spring Cloud的关系？ &raquo;</a>
-	    
 	</div>
   </div>
 </div>
@@ -2311,7 +2341,7 @@
 </div>
 <script type="text/javascript">
 	$(function(){
-		var currentURL = '16466484941914.html';
+		var currentURL = '16787580718111.html';
 		$('#side-nav a').each(function(){
 			if($(this).attr('href') == currentURL){
 				$(this).parent().addClass('active');
@@ -2357,6 +2387,8 @@
 
 
 
+
+<script src="asset/prism.js"></script>
 
 
 <style type="text/css">
